@@ -155,6 +155,13 @@ async def admin_login(request: LoginRequest):
     email = request.email.lower().strip()
     password = request.password
     
+    # Debug logging to troubleshoot login issues
+    logger.info("admin_login_attempt", 
+                input_email=email, 
+                expected_email=settings.admin_email.lower(),
+                email_match=(email == settings.admin_email.lower()),
+                password_match=(password == settings.admin_password))
+    
     if email == settings.admin_email.lower() and password == settings.admin_password:
         token = _generate_token()
         
@@ -175,6 +182,7 @@ async def admin_login(request: LoginRequest):
     
     logger.warning("admin_login_failed", email=email)
     raise APIError(ErrorCodes.INVALID_CREDENTIALS, "Invalid admin credentials", 401)
+
 
 
 @router.post("/logout", response_model=LogoutResponse)
