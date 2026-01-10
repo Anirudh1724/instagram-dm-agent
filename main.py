@@ -66,29 +66,41 @@ def create_app() -> FastAPI:
     static_dir = os.path.join(os.path.dirname(__file__), "static")
     
     if os.path.exists(dashboard_dir):
-        # Serve React frontend assets
-        app.mount("/assets", StaticFiles(directory=os.path.join(dashboard_dir, "assets")), name="assets")
+        from fastapi.responses import FileResponse, HTMLResponse
         
-        # Serve index.html for all non-API routes (SPA fallback)
-        from fastapi.responses import FileResponse
+        # Check if assets directory exists
+        assets_dir = os.path.join(dashboard_dir, "assets")
+        if os.path.exists(assets_dir):
+            app.mount("/assets", StaticFiles(directory=assets_dir), name="assets")
         
-        @app.get("/{full_path:path}")
-        async def serve_spa(full_path: str):
-            """Serve React SPA for all non-API routes."""
-            # Don't intercept API routes
-            if full_path.startswith(("api/", "admin/", "webhook/", "docs", "openapi", "health")):
-                return None
-            
+        # Serve index.html for root path
+        @app.get("/", response_class=HTMLResponse)
+        async def serve_root():
+            """Serve React app at root."""
             index_path = os.path.join(dashboard_dir, "index.html")
             if os.path.exists(index_path):
-                return FileResponse(index_path)
-            return {"error": "Frontend not built"}
+                with open(index_path, 'r') as f:
+                    return HTMLResponse(content=f.read())
+            return HTMLResponse(content="<h1>Frontend not built</h1>", status_code=404)
+        
+        # Serve index.html for SPA client-side routes (login, client, admin, etc.)
+        @app.get("/login", response_class=HTMLResponse)
+        @app.get("/client/{path:path}", response_class=HTMLResponse)
+        @app.get("/admin/{path:path}", response_class=HTMLResponse)
+        async def serve_spa_routes(path: str = ""):
+            """Serve React SPA for client-side routes."""
+            index_path = os.path.join(dashboard_dir, "index.html")
+            if os.path.exists(index_path):
+                with open(index_path, 'r') as f:
+                    return HTMLResponse(content=f.read())
+            return HTMLResponse(content="<h1>Frontend not built</h1>", status_code=404)
         
         logger.info("frontend_serving", path=dashboard_dir)
     elif os.path.exists(static_dir):
         # Fallback to old static directory
         app.mount("/static", StaticFiles(directory=static_dir), name="static")
     
+
 
     @app.on_event("startup")
     async def startup():
