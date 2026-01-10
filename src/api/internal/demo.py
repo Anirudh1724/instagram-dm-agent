@@ -40,14 +40,9 @@ class DemoMessageRequest(BaseModel):
 
 @router.get("/")
 async def root():
-    """Root endpoint - welcome message."""
-    return {
-        "service": "Instagram DM Agent",
-        "status": "running",
-        "docs": "/docs",
-        "health": "/health",
-        "test": "POST /test-message"
-    }
+    """Root endpoint - redirect to login/dashboard."""
+    from fastapi.responses import RedirectResponse
+    return RedirectResponse(url="/login", status_code=302)
 
 
 @router.get("/health")
