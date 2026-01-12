@@ -21,10 +21,12 @@ class Settings(BaseSettings):
     llm_temperature: float = 0.7
     
     # Meta/Instagram
+    meta_app_id: str = ""  # Facebook App ID for OAuth
     meta_verify_token: str = ""
     meta_app_secret: str = ""
     meta_access_token: str = ""
     instagram_account_id: str = ""
+    oauth_redirect_uri: str = ""  # OAuth callback URL
     
     # Redis
     redis_url: str = "redis://localhost:6379/0"

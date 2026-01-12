@@ -14,8 +14,14 @@ const DEFAULT_CONFIG = {
     meta_verify_token: '',
     instagram_account_id: '',
     login_email: '',
-    login_password: ''
+    login_password: '',
+    // OAuth-related fields
+    oauth_connected: false,
+    profile_picture: '',
+    instagram_username: '',
+    connected_at: '',
 };
+
 
 export function ClientEditor() {
     const { id } = useParams();
@@ -198,51 +204,119 @@ export function ClientEditor() {
                                     />
                                 </div>
                             </div>
-                            {/* Instagram/Meta API Credentials */}
+                            {/* Instagram Connection - OAuth Flow */}
                             <div className="grid gap-4 p-4 bg-[#161b22] rounded-lg border border-[#30363d]">
                                 <div className="flex items-center gap-2 text-orange-400 mb-2">
-                                    <span className="text-lg font-semibold">🔗 Instagram API Setup</span>
-                                </div>
-                                <p className="text-xs text-gray-400 -mt-2 mb-2">
-                                    The Graph API ID is automatically detected when the first message arrives. You only need to provide the access token.
-                                </p>
-
-                                <div className="grid gap-2">
-                                    <label className="text-gray-400 text-sm">Instagram App ID <span className="text-gray-600">(Optional)</span></label>
-                                    <input
-                                        type="text"
-                                        placeholder="e.g. 2827074154305715 (from Instagram settings)"
-                                        value={config.instagram_account_id}
-                                        className="search-input w-full p-3 bg-[#1e293b] border border-[#30363d] text-white rounded-md"
-                                        onChange={(e) => setConfig({ ...config, instagram_account_id: e.target.value })}
-                                    />
-                                    <p className="text-xs text-gray-500">The ID you see in Instagram Business settings. Leave blank if unsure - will be auto-detected.</p>
+                                    <span className="text-lg font-semibold">🔗 Instagram Connection</span>
                                 </div>
 
-                                <div className="grid gap-2">
-                                    <label className="text-gray-400 text-sm">Access Token <span className="text-red-400">*</span></label>
-                                    <input
-                                        type="password"
-                                        placeholder={!isNew && !config.meta_access_token ? "Configured (Hidden)" : "Paste your Meta API access token"}
-                                        value={config.meta_access_token}
-                                        className="search-input w-full p-3 bg-[#1e293b] border border-[#30363d] text-white rounded-md"
-                                        onChange={(e) => setConfig({ ...config, meta_access_token: e.target.value })}
-                                    />
-                                    <p className="text-xs text-gray-500">From Meta Developer Console → Your App → Access Token</p>
-                                </div>
+                                {/* Show connection status if connected */}
+                                {config.oauth_connected || config.meta_access_token ? (
+                                    <div className="space-y-4">
+                                        <div className="flex items-center gap-4 p-3 bg-green-500/10 border border-green-500/30 rounded-lg">
+                                            {config.profile_picture && (
+                                                <img
+                                                    src={config.profile_picture}
+                                                    alt="Profile"
+                                                    className="w-12 h-12 rounded-full"
+                                                />
+                                            )}
+                                            <div className="flex-1">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-green-400 font-semibold">✓ Connected</span>
+                                                </div>
+                                                <p className="text-sm text-gray-400">
+                                                    {config.instagram_username ? `@${config.instagram_username}` : config.business_name}
+                                                </p>
+                                                {config.connected_at && (
+                                                    <p className="text-xs text-gray-500">
+                                                        Connected on {new Date(config.connected_at).toLocaleDateString()}
+                                                    </p>
+                                                )}
+                                            </div>
+                                            <button
+                                                onClick={() => {
+                                                    if (confirm("Disconnect Instagram? The agent will stop responding to DMs.")) {
+                                                        // Call disconnect API
+                                                        fetch(`/api/auth/instagram/disconnect/${config.client_id}`, { method: 'POST' })
+                                                            .then(() => {
+                                                                setConfig({
+                                                                    ...config,
+                                                                    oauth_connected: false,
+                                                                    meta_access_token: '',
+                                                                    profile_picture: '',
+                                                                    connected_at: ''
+                                                                });
+                                                            });
+                                                    }
+                                                }}
+                                                className="px-3 py-2 bg-red-500/20 text-red-400 border border-red-500/30 rounded-md text-sm hover:bg-red-500/30 transition-colors"
+                                            >
+                                                Disconnect
+                                            </button>
+                                        </div>
+                                        <p className="text-xs text-gray-500">
+                                            Your Instagram account is connected. The agent will automatically respond to DMs.
+                                        </p>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-4">
+                                        <p className="text-sm text-gray-400">
+                                            Connect your Instagram Business account to enable the DM agent.
+                                        </p>
 
-                                <div className="grid gap-2">
-                                    <label className="text-gray-400 text-sm">App Secret <span className="text-gray-600">(For webhook verification)</span></label>
-                                    <input
-                                        type="password"
-                                        placeholder={!isNew && !config.meta_verify_token ? "Configured (Hidden)" : "Paste your app secret"}
-                                        value={config.meta_verify_token}
-                                        className="search-input w-full p-3 bg-[#1e293b] border border-[#30363d] text-white rounded-md"
-                                        onChange={(e) => setConfig({ ...config, meta_verify_token: e.target.value })}
-                                    />
-                                    <p className="text-xs text-gray-500">Used to verify webhook requests from Meta</p>
-                                </div>
+                                        {isNew ? (
+                                            <div className="p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
+                                                <p className="text-sm text-yellow-400">
+                                                    💡 Save the client first, then connect Instagram.
+                                                </p>
+                                            </div>
+                                        ) : (
+                                            <button
+                                                onClick={() => {
+                                                    // Redirect to OAuth flow
+                                                    window.location.href = `/api/auth/instagram/connect?client_id=${config.client_id}&redirect_after=/admin/clients/${config.client_id}`;
+                                                }}
+                                                className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-semibold rounded-lg transition-all transform hover:scale-[1.02]"
+                                            >
+                                                <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                                                    <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z" />
+                                                </svg>
+                                                Connect Instagram
+                                            </button>
+                                        )}
+
+                                        <details className="text-xs text-gray-500">
+                                            <summary className="cursor-pointer hover:text-gray-400">
+                                                Or enter credentials manually (advanced)
+                                            </summary>
+                                            <div className="mt-4 space-y-4 p-4 bg-[#0d1117] rounded-lg">
+                                                <div className="grid gap-2">
+                                                    <label className="text-gray-400 text-sm">Instagram Account ID</label>
+                                                    <input
+                                                        type="text"
+                                                        placeholder="e.g. 17841234567890"
+                                                        value={config.instagram_account_id}
+                                                        className="search-input w-full p-3 bg-[#1e293b] border border-[#30363d] text-white rounded-md"
+                                                        onChange={(e) => setConfig({ ...config, instagram_account_id: e.target.value })}
+                                                    />
+                                                </div>
+                                                <div className="grid gap-2">
+                                                    <label className="text-gray-400 text-sm">Access Token</label>
+                                                    <input
+                                                        type="password"
+                                                        placeholder="Paste your Meta API access token"
+                                                        value={config.meta_access_token}
+                                                        className="search-input w-full p-3 bg-[#1e293b] border border-[#30363d] text-white rounded-md"
+                                                        onChange={(e) => setConfig({ ...config, meta_access_token: e.target.value })}
+                                                    />
+                                                </div>
+                                            </div>
+                                        </details>
+                                    </div>
+                                )}
                             </div>
+
                         </div>
                     </div>
 
