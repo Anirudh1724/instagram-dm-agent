@@ -101,6 +101,11 @@ async def verify_admin_key(
     """
     settings = get_settings()
     
+    # If no API key is configured, allow access (development mode)
+    if not settings.admin_api_key:
+        logger.warning("admin_no_key_configured", message="Allowing access in development mode")
+        return True
+    
     if not x_admin_key:
         raise APIError(ErrorCodes.ADMIN_REQUIRED, "Admin API key required", 401)
     
@@ -108,6 +113,7 @@ async def verify_admin_key(
         raise APIError(ErrorCodes.ACCESS_DENIED, "Invalid admin API key", 403)
     
     return True
+
 
 
 async def verify_client_owns_resource(

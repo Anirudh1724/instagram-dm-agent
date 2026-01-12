@@ -18,10 +18,17 @@ export default defineConfig({
         target: 'http://localhost:8000',
         changeOrigin: true,
       },
-      '/admin/': {
+      '/admin': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+      },
+      '/webhook': {
         target: 'http://localhost:8000',
         changeOrigin: true,
       },
     },
   },
 })
+
+
+

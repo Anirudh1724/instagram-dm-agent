@@ -7,6 +7,7 @@ import { Insights } from './pages/Insights';
 import { Leads } from './pages/Leads';
 import { FollowupLeads } from './pages/FollowupLeads';
 import { BookingLeads } from './pages/BookingLeads';
+import { Settings } from './pages/Settings';
 import { AdminDashboard } from './pages/admin/AdminDashboard';
 import { Clients } from './pages/admin/Clients';
 import { ClientEditor } from './pages/admin/ClientEditor';
@@ -78,7 +79,9 @@ function App() {
           <Route path="leads" element={<Leads />} />
           <Route path="followup-leads" element={<FollowupLeads />} />
           <Route path="booking-leads" element={<BookingLeads />} />
+          <Route path="settings" element={<Settings />} />
         </Route>
+
 
         {/* Admin Dashboard Routes */}
         <Route path="/admin" element={<AdminLayout />}>

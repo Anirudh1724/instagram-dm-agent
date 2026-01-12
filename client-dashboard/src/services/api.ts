@@ -4,6 +4,7 @@ import axios from 'axios';
 const API_URL = '/api';
 const ADMIN_API_URL = '/admin';
 
+
 // Create generic axios instance
 const api = axios.create({
     headers: {
