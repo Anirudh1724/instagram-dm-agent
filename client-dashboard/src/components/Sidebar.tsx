@@ -1,4 +1,5 @@
-import { Instagram, LayoutDashboard, Users, Clock, Calendar, Settings, LogOut, PieChart } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Instagram, LayoutDashboard, Users, Clock, Calendar, Settings, LogOut, PieChart, Menu, X } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 
 interface SidebarProps {
@@ -8,8 +9,25 @@ interface SidebarProps {
 export function Sidebar({ onLogout }: SidebarProps) {
     const navigate = useNavigate();
     const location = useLocation();
+    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
     const isActive = (path: string) => location.pathname === path;
+
+    // Close menu on route change
+    useEffect(() => {
+        setIsMobileMenuOpen(false);
+    }, [location.pathname]);
+
+    // Close menu on window resize to desktop
+    useEffect(() => {
+        const handleResize = () => {
+            if (window.innerWidth > 768) {
+                setIsMobileMenuOpen(false);
+            }
+        };
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
 
     const navItems = [
         { path: '/client/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
@@ -19,47 +37,70 @@ export function Sidebar({ onLogout }: SidebarProps) {
         { path: '/client/booking-leads', icon: Calendar, label: 'Booking Leads' },
     ];
 
+    const handleNavClick = (path: string) => {
+        navigate(path);
+        setIsMobileMenuOpen(false);
+    };
+
     return (
-        <aside className="sidebar">
-            {/* Logo */}
-            <div className="sidebar-header">
-                <div className="logo">
-                    <div className="logo-icon">
-                        <Instagram size={20} color="white" />
-                    </div>
-                    <div className="logo-text">
-                        <h1>DM Agent</h1>
-                        <span>Automation Dashboard</span>
+        <>
+            {/* Mobile Menu Toggle Button */}
+            <button
+                className="mobile-menu-toggle"
+                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                aria-label="Toggle menu"
+            >
+                {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+            </button>
+
+            {/* Mobile Overlay */}
+            <div
+                className={`mobile-overlay ${isMobileMenuOpen ? 'active' : ''}`}
+                onClick={() => setIsMobileMenuOpen(false)}
+            />
+
+            {/* Sidebar */}
+            <aside className={`sidebar ${isMobileMenuOpen ? 'active' : ''}`}>
+                {/* Logo */}
+                <div className="sidebar-header">
+                    <div className="logo">
+                        <div className="logo-icon">
+                            <Instagram size={20} color="white" />
+                        </div>
+                        <div className="logo-text">
+                            <h1>DM Agent</h1>
+                            <span>Automation Dashboard</span>
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            {/* Navigation */}
-            <nav className="sidebar-nav">
-                {navItems.map((item) => (
-                    <button
-                        key={item.path}
-                        className={`nav-item ${isActive(item.path) ? 'active' : ''}`}
-                        onClick={() => navigate(item.path)}
-                    >
-                        <item.icon size={18} />
-                        <span>{item.label}</span>
-                        {isActive(item.path) && <div className="active-indicator" />}
+                {/* Navigation */}
+                <nav className="sidebar-nav">
+                    {navItems.map((item) => (
+                        <button
+                            key={item.path}
+                            className={`nav-item ${isActive(item.path) ? 'active' : ''}`}
+                            onClick={() => handleNavClick(item.path)}
+                        >
+                            <item.icon size={18} />
+                            <span>{item.label}</span>
+                            {isActive(item.path) && <div className="active-indicator" />}
+                        </button>
+                    ))}
+                </nav>
+
+                {/* Bottom Section */}
+                <div className="sidebar-footer">
+                    <button className="nav-item" onClick={() => handleNavClick('/client/settings')}>
+                        <Settings size={18} />
+                        <span>Settings</span>
                     </button>
-                ))}
-            </nav>
-
-            {/* Bottom Section */}
-            <div className="sidebar-footer">
-                <button className="nav-item" onClick={() => navigate('/client/settings')}>
-                    <Settings size={18} />
-                    <span>Settings</span>
-                </button>
-                <button className="nav-item" onClick={onLogout}>
-                    <LogOut size={18} />
-                    <span>Logout</span>
-                </button>
-            </div>
-        </aside>
+                    <button className="nav-item" onClick={onLogout}>
+                        <LogOut size={18} />
+                        <span>Logout</span>
+                    </button>
+                </div>
+            </aside>
+        </>
     );
 }
