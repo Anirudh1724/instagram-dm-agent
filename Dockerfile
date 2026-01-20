@@ -9,13 +9,13 @@ FROM node:20-alpine AS frontend-builder
 WORKDIR /app/frontend
 
 # Copy frontend package files
-COPY client-dashboard/package*.json ./
+COPY frontend/package*.json ./
 
 # Install dependencies
 RUN npm ci
 
 # Copy frontend source
-COPY client-dashboard/ ./
+COPY frontend/ ./
 
 # Build for production
 RUN npm run build
@@ -33,12 +33,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy Python requirements and install
-COPY requirements.txt .
+COPY backend/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy backend source code
-COPY src/ ./src/
-COPY main.py .
+COPY backend/src/ ./src/
+COPY backend/main.py .
 
 # Copy built frontend from Stage 1
 COPY --from=frontend-builder /app/frontend/dist ./static/dashboard

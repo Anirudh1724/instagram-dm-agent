@@ -1,5 +1,22 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.env
 
 # Redis persistence data
-data/redis/
+backend/data/redis/
 *.rdb
 *.aof
+dump.rdb
+
+# Node.js
+node_modules/
+frontend/dist/
+
+# IDE
+.vscode/
+.idea/
+
+# Environment
+.env.local
