@@ -83,11 +83,18 @@ def create_app() -> FastAPI:
                     return HTMLResponse(content=f.read())
             return HTMLResponse(content="<h1>Frontend not built</h1>", status_code=404)
         
-        # Serve index.html for SPA client-side routes (login, client, admin, etc.)
+        # Serve index.html for SPA client-side routes
         @app.get("/login", response_class=HTMLResponse)
-        @app.get("/client/{path:path}", response_class=HTMLResponse)
-        @app.get("/admin/{path:path}", response_class=HTMLResponse)
-        async def serve_spa_routes(path: str = ""):
+        @app.get("/dashboard", response_class=HTMLResponse)
+        @app.get("/leads", response_class=HTMLResponse)
+        @app.get("/followup", response_class=HTMLResponse)
+        @app.get("/bookings", response_class=HTMLResponse)
+        @app.get("/settings", response_class=HTMLResponse)
+        @app.get("/admin", response_class=HTMLResponse)
+        @app.get("/admin/clients", response_class=HTMLResponse)
+        @app.get("/admin/clients/{client_id}", response_class=HTMLResponse)
+        @app.get("/admin/insights", response_class=HTMLResponse)
+        async def serve_spa_routes(client_id: str = ""):
             """Serve React SPA for client-side routes."""
             index_path = os.path.join(dashboard_dir, "index.html")
             if os.path.exists(index_path):
