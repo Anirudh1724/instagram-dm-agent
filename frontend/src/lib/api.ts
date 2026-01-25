@@ -117,9 +117,41 @@ export interface DashboardStats {
     }>;
 }
 
-export async function getDashboard(period: string = 'daily'): Promise<DashboardStats> {
+export async function getDashboard(period: string = 'daily', type: 'text' | 'voice' = 'text'): Promise<DashboardStats> {
     const clientId = getClientId();
     const token = getAuthToken();
+
+    if (type === 'voice') {
+        // Mock data for Voice Agent Dashboard
+        return {
+            leadsContacted: Math.floor(Math.random() * 50) + 20, // Calls Received
+            leadsContactedChange: Math.floor(Math.random() * 20) - 5,
+            uniqueLeads: Math.floor(Math.random() * 40) + 10, // Unique Callers
+            uniqueLeadsChange: Math.floor(Math.random() * 10) + 2,
+            messagesSent: Math.floor(Math.random() * 30) + 5, // Calls Answered
+            messagesSentChange: Math.floor(Math.random() * 5) + 1,
+            responseRate: Math.floor(Math.random() * 30) + 40, // Answer Rate
+            responseRateChange: Math.floor(Math.random() * 5) - 2,
+            bookings: Math.floor(Math.random() * 5), // Meetings Booked
+            bookingsChange: Math.floor(Math.random() * 2),
+            chartData: [
+                { name: 'Mon', leads: 40, messages: 24, conversions: 2 },
+                { name: 'Tue', leads: 30, messages: 13, conversions: 1 },
+                { name: 'Wed', leads: 20, messages: 18, conversions: 3 },
+                { name: 'Thu', leads: 27, messages: 19, conversions: 2 },
+                { name: 'Fri', leads: 18, messages: 10, conversions: 1 },
+                { name: 'Sat', leads: 23, messages: 15, conversions: 4 },
+                { name: 'Sun', leads: 34, messages: 20, conversions: 3 },
+            ],
+            funnelData: [
+                { name: 'Total Calls', value: 100, fill: '#8884d8' },
+                { name: 'Answered', value: 75, fill: '#83a6ed' },
+                { name: 'Qualified', value: 50, fill: '#8dd1e1' },
+                { name: 'Booked', value: 25, fill: '#82ca9d' },
+            ],
+        };
+    }
+
     const response = await apiRequest<any>(`/api/client/dashboard?period=${period}&token=${token}`);
 
     // Map backend response to frontend format
@@ -148,8 +180,24 @@ export interface Activity {
     status: string;
 }
 
-export async function getActivity(limit: number = 10): Promise<Activity[]> {
+export async function getActivity(limit: number = 10, type: 'text' | 'voice' = 'text'): Promise<Activity[]> {
     const token = getAuthToken();
+
+    if (type === 'voice') {
+        const statuses = ['missed', 'answered', 'voicemail', 'booked'];
+        return Array.from({ length: limit }).map((_, i) => {
+            const status = statuses[Math.floor(Math.random() * statuses.length)];
+            return {
+                id: `voice-${i}`,
+                customer_name: `+1 ${Math.floor(Math.random() * 900) + 100}-${Math.floor(Math.random() * 900) + 100}-${Math.floor(Math.random() * 9000) + 1000}`,
+                customer_username: 'Voice Caller',
+                last_message: status === 'missed' ? 'Missed Call' : `Duration: ${Math.floor(Math.random() * 10)}m ${Math.floor(Math.random() * 60)}s`,
+                last_message_time: `${Math.floor(Math.random() * 59) + 1}m ago`,
+                status: status,
+            };
+        });
+    }
+
     const response = await apiRequest<{ conversations: Activity[] }>(`/api/client/activity?limit=${limit}&token=${token}`);
     return response.conversations || [];
 }
@@ -284,6 +332,7 @@ export interface Client {
     leadsCount: number;
     conversionRate: number;
     createdAt: string;
+    agentType: 'text' | 'voice';
     aiPrompts?: {
         greeting: string;
         qualification: string;
@@ -307,6 +356,7 @@ export async function getClients(): Promise<Client[]> {
         leadsCount: client.leads_count || 0,
         conversionRate: client.conversion_rate || 0,
         createdAt: client.created_at || new Date().toISOString().split('T')[0],
+        agentType: client.agent_type || 'text',
         aiPrompts: {
             greeting: client.first_message || '',
             qualification: client.qualification_prompt || '',
@@ -332,6 +382,7 @@ export async function getClient(clientId: string): Promise<Client | null> {
             leadsCount: response.leads_count || 0,
             conversionRate: response.conversion_rate || 0,
             createdAt: response.created_at || '',
+            agentType: response.agent_type || 'text',
             aiPrompts: {
                 greeting: response.first_message || '',
                 qualification: response.qualification_prompt || '',
@@ -349,6 +400,7 @@ export async function createClient(data: Partial<Client> & { password?: string }
         business_name: data.businessName,
         login_email: data.email,
         login_password: data.password,
+        agent_type: data.agentType || 'text',
         first_message: data.aiPrompts?.greeting || '',
         qualification_prompt: data.aiPrompts?.qualification || '',
         dm_prompt: data.aiPrompts?.booking || '',
@@ -368,6 +420,7 @@ export async function updateClient(clientId: string, data: Partial<Client>): Pro
         client_id: clientId,
         business_name: data.businessName,
         login_email: data.email,
+        agent_type: data.agentType,
         first_message: data.aiPrompts?.greeting || '',
         qualification_prompt: data.aiPrompts?.qualification || '',
         dm_prompt: data.aiPrompts?.booking || '',

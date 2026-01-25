@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Save, Loader2, Trash2 } from 'lucide-react';
+import { ArrowLeft, Save, Loader2, Trash2, MessageSquare, Phone } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -23,6 +23,7 @@ export default function ClientEditor() {
     email: '',
     password: '',
     instagramHandle: '',
+    agentType: 'text' as 'text' | 'voice',
     greeting: '',
     qualification: '',
     booking: '',
@@ -40,6 +41,7 @@ export default function ClientEditor() {
               email: client.email || '',
               password: '',
               instagramHandle: client.instagramHandle || '',
+              agentType: client.agentType || 'text',
               greeting: client.aiPrompts?.greeting || '',
               qualification: client.aiPrompts?.qualification || '',
               booking: client.aiPrompts?.booking || '',
@@ -69,6 +71,7 @@ export default function ClientEditor() {
         businessName: formData.businessName,
         email: formData.email,
         instagramHandle: formData.instagramHandle,
+        agentType: formData.agentType,
         aiPrompts: {
           greeting: formData.greeting,
           qualification: formData.qualification,
@@ -210,6 +213,40 @@ export default function ClientEditor() {
                 placeholder="@yourbusiness"
                 className="bg-secondary/50"
               />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Agent Type *</Label>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setFormData({ ...formData, agentType: 'text' })}
+                  className={`flex-1 px-4 py-3 rounded-lg border-2 transition-all duration-200 flex items-center justify-center gap-2 ${formData.agentType === 'text'
+                      ? 'border-primary bg-primary/10 text-primary'
+                      : 'border-border bg-secondary/50 text-muted-foreground hover:border-primary/50'
+                    }`}
+                >
+                  <MessageSquare className="w-5 h-5" />
+                  <span className="font-medium">Text Agent</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFormData({ ...formData, agentType: 'voice' })}
+                  className={`flex-1 px-4 py-3 rounded-lg border-2 transition-all duration-200 flex items-center justify-center gap-2 ${formData.agentType === 'voice'
+                      ? 'border-primary bg-primary/10 text-primary'
+                      : 'border-border bg-secondary/50 text-muted-foreground hover:border-primary/50'
+                    }`}
+                >
+                  <Phone className="w-5 h-5" />
+                  <span className="font-medium">Voice Agent</span>
+                </button>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {formData.agentType === 'text'
+                  ? 'Text agents handle Instagram DM conversations.'
+                  : 'Voice agents handle inbound phone calls.'
+                }
+              </p>
             </div>
           </div>
         </motion.div>

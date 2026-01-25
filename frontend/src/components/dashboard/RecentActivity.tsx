@@ -9,12 +9,17 @@ const iconStyles = {
   booking: 'bg-warning/20 text-warning',
   conversion: 'bg-success/20 text-success',
   new_lead: 'bg-info/20 text-info',
+  missed: 'bg-destructive/20 text-destructive',
+  answered: 'bg-primary/20 text-primary',
+  voicemail: 'bg-secondary/20 text-secondary-foreground',
 };
 
 const getActivityIcon = (status: string) => {
   if (status === 'booked' || status === 'booking') return Calendar;
   if (status === 'converted') return CheckCircle;
   if (status === 'new' || status === 'greeting') return UserPlus;
+  if (status === 'missed') return Loader2; // using Loader2 as placeholder or maybe PhoneOff if available? Let's check imports
+  if (status === 'answered') return MessageSquare; // Phone icon would be better
   return MessageSquare;
 };
 
@@ -22,10 +27,17 @@ const getActivityType = (status: string): keyof typeof iconStyles => {
   if (status === 'booked' || status === 'booking') return 'booking';
   if (status === 'converted') return 'conversion';
   if (status === 'new' || status === 'greeting') return 'new_lead';
+  if (status === 'missed') return 'missed';
+  if (status === 'answered') return 'answered';
+  if (status === 'voicemail') return 'voicemail';
   return 'message';
 };
 
-export function RecentActivity() {
+interface RecentActivityProps {
+  mode?: 'text' | 'voice';
+}
+
+export function RecentActivity({ mode = 'text' }: RecentActivityProps) {
   const [activities, setActivities] = useState<Activity[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -33,7 +45,7 @@ export function RecentActivity() {
     const fetchActivity = async () => {
       try {
         setLoading(true);
-        const data = await getActivity(5);
+        const data = await getActivity(5, mode);
         setActivities(data);
       } catch (err) {
         console.error('Failed to fetch activity:', err);
@@ -44,7 +56,7 @@ export function RecentActivity() {
     };
 
     fetchActivity();
-  }, []);
+  }, [mode]);
 
   return (
     <motion.div
@@ -55,7 +67,7 @@ export function RecentActivity() {
     >
       <div className="mb-6">
         <h3 className="text-lg font-semibold">Recent Activity</h3>
-        <p className="text-sm text-muted-foreground">Latest updates from your leads</p>
+        <p className="text-sm text-muted-foreground">Latest updates from your {mode === 'text' ? 'leads' : 'calls'}</p>
       </div>
 
       {loading ? (
@@ -87,7 +99,7 @@ export function RecentActivity() {
                       <Icon className="w-3 h-3" />
                     </div>
                     <p className="text-sm font-medium truncate">
-                      {activity.customer_name || 'Unknown'} {activity.customer_username ? `(${activity.customer_username})` : ''}
+                      {activity.customer_name || 'Unknown'} {activity.customer_username && activity.customer_username !== 'Voice Caller' ? `(${activity.customer_username})` : ''}
                     </p>
                   </div>
                   <p className="text-sm text-muted-foreground truncate mt-0.5">

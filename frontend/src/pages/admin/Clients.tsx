@@ -153,7 +153,7 @@ export default function Clients() {
               </DropdownMenu>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               {client.isConnected ? (
                 <Badge variant="outline" className="bg-success/10 text-success border-success/20 gap-1">
                   <CheckCircle className="w-3 h-3" />
@@ -165,6 +165,15 @@ export default function Clients() {
                   Disconnected
                 </Badge>
               )}
+              <Badge
+                variant="outline"
+                className={client.agentType === 'voice'
+                  ? 'bg-info/10 text-info border-info/20'
+                  : 'bg-primary/10 text-primary border-primary/20'
+                }
+              >
+                {client.agentType === 'voice' ? '📞 Voice' : '💬 Text'}
+              </Badge>
               <span className="text-sm text-muted-foreground">{client.instagramHandle}</span>
             </div>
 

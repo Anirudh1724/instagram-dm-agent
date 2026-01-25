@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Users, MessageSquare, TrendingUp, Calendar, Loader2 } from 'lucide-react';
+import { Users, MessageSquare, TrendingUp, Calendar, Loader2, Phone } from 'lucide-react';
 import { StatCard } from '@/components/ui/stat-card';
 import { ActivityChart } from '@/components/dashboard/ActivityChart';
 import { ConversionFunnel } from '@/components/dashboard/ConversionFunnel';
@@ -10,6 +10,7 @@ import { useAuth } from '@/contexts/AuthContext';
 
 export default function ClientDashboard() {
   const { user } = useAuth();
+  const [mode, setMode] = useState<'text' | 'voice'>('text');
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -18,7 +19,7 @@ export default function ClientDashboard() {
     const fetchDashboard = async () => {
       try {
         setLoading(true);
-        const data = await getDashboard('daily');
+        const data = await getDashboard('daily', mode);
         setStats(data);
         setError(null);
       } catch (err) {
@@ -43,7 +44,7 @@ export default function ClientDashboard() {
     };
 
     fetchDashboard();
-  }, []);
+  }, [mode]);
 
   if (loading) {
     return (
@@ -59,14 +60,37 @@ export default function ClientDashboard() {
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="space-y-2"
+        className="flex items-center justify-between"
       >
-        <h1 className="text-3xl font-bold">
-          Welcome back, <span className="gradient-text">{user?.name?.split(' ')[0]}</span>
-        </h1>
-        <p className="text-muted-foreground">
-          Here's what's happening with your leads today
-        </p>
+        <div className="space-y-2">
+          <h1 className="text-3xl font-bold">
+            Welcome back, <span className="gradient-text">{user?.name?.split(' ')[0]}</span>
+          </h1>
+          <p className="text-muted-foreground">
+            Here's what's happening with your {mode === 'text' ? 'leads' : 'Voice Agents'} today
+          </p>
+        </div>
+
+        <div className="bg-secondary/50 p-1 rounded-lg flex items-center gap-1 border border-border/50">
+          <button
+            onClick={() => setMode('text')}
+            className={`px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 ${mode === 'text'
+              ? 'bg-background text-foreground shadow-sm'
+              : 'text-muted-foreground hover:text-foreground'
+              }`}
+          >
+            Text Agent
+          </button>
+          <button
+            onClick={() => setMode('voice')}
+            className={`px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 ${mode === 'voice'
+              ? 'bg-background text-foreground shadow-sm'
+              : 'text-muted-foreground hover:text-foreground'
+              }`}
+          >
+            Voice Agent
+          </button>
+        </div>
       </motion.div>
 
       {error && (
@@ -78,29 +102,29 @@ export default function ClientDashboard() {
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
         <StatCard
-          title="Leads Contacted"
+          title={mode === 'text' ? "Leads Contacted" : "Calls Received"}
           value={(stats?.leadsContacted || 0).toLocaleString()}
           change={stats?.leadsContactedChange || 0}
-          icon={Users}
+          icon={mode === 'text' ? Users : Phone}
           variant="primary"
           delay={0}
         />
         <StatCard
-          title="Unique Leads"
+          title={mode === 'text' ? "Unique Leads" : "Unique Callers"}
           value={(stats?.uniqueLeads || 0).toLocaleString()}
           change={stats?.uniqueLeadsChange || 0}
           icon={Users}
           delay={0.1}
         />
         <StatCard
-          title="Messages Sent"
+          title={mode === 'text' ? "Messages Sent" : "Calls Answered"}
           value={(stats?.messagesSent || 0).toLocaleString()}
           change={stats?.messagesSentChange || 0}
           icon={MessageSquare}
           delay={0.2}
         />
         <StatCard
-          title="Response Rate"
+          title={mode === 'text' ? "Response Rate" : "Answer Rate"}
           value={`${stats?.responseRate || 0}%`}
           change={stats?.responseRateChange || 0}
           icon={TrendingUp}
@@ -108,7 +132,7 @@ export default function ClientDashboard() {
           delay={0.3}
         />
         <StatCard
-          title="Bookings"
+          title={mode === 'text' ? "Bookings" : "Meetings Booked"}
           value={stats?.bookings || 0}
           change={stats?.bookingsChange || 0}
           icon={Calendar}
@@ -124,7 +148,7 @@ export default function ClientDashboard() {
       </div>
 
       {/* Recent Activity */}
-      <RecentActivity />
+      <RecentActivity mode={mode} />
     </div>
   );
 }
