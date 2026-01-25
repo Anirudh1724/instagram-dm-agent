@@ -7,15 +7,17 @@ import {
   Calendar,
   BarChart3,
   Settings,
-  LogOut,
   Bot,
   UserCog,
   Building2,
   RefreshCcw,
+  ShieldCheck,
+  Zap,
+  Phone
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { useDashboard } from '@/contexts/DashboardContext';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 
@@ -37,41 +39,80 @@ const adminNavItems = [
 export function DashboardSidebar() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
+  const { mode, setMode } = useDashboard();
 
   const isAdmin = user?.role === 'admin';
   const navItems = isAdmin ? adminNavItems : clientNavItems;
-
-  const handleLogout = () => {
-    logout();
-    navigate('/');
-  };
+  const accentBg = isAdmin ? 'bg-cyan-500/10' : 'bg-emerald-500/10';
 
   return (
-    <motion.aside
-      initial={{ x: -100, opacity: 0 }}
-      animate={{ x: 0, opacity: 1 }}
-      className="w-64 min-h-screen bg-sidebar border-r border-sidebar-border flex flex-col"
+    <aside
+      className="w-[280px] min-h-screen relative z-50 ml-4 my-4 rounded-2xl overflow-hidden backdrop-blur-xl bg-zinc-900/60 border border-white/5 shadow-2xl flex flex-col"
     >
+      {/* Gradient Glow */}
+      <div className={cn("absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-50")} />
+
       {/* Logo */}
-      <div className="p-6">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center">
-            <Bot className="w-6 h-6 text-primary-foreground" />
+      <div className="p-8 pb-4">
+        <div className="flex items-center gap-4 mb-6">
+          <div className={cn("w-12 h-12 rounded-xl flex items-center justify-center border border-white/10 shadow-lg relative overflow-hidden group", accentBg)}>
+            <div className={cn("absolute inset-0 bg-white/5 rounded-xl animate-pulse")} />
+            <span className={cn("text-xl font-black tracking-tighter z-10", isAdmin ? "text-cyan-400" : "text-emerald-400")}>
+              LS
+            </span>
           </div>
           <div>
-            <h1 className="font-bold text-lg text-foreground">LeadAI</h1>
-            <p className="text-xs text-muted-foreground">
-              {isAdmin ? 'Admin Panel' : 'Client Dashboard'}
-            </p>
+            <h1 className="font-bold text-lg text-white tracking-wide">Lumoscale</h1>
+            <div className="flex items-center gap-2">
+              <span className={cn("w-1.5 h-1.5 rounded-full animate-pulse", isAdmin ? "bg-cyan-500" : "bg-emerald-500")} />
+              <p className="text-[10px] uppercase tracking-widest text-white/40 font-bold">
+                {isAdmin ? 'Admin Console' : 'Client Mode'}
+              </p>
+            </div>
           </div>
         </div>
+
+        {/* Agent Toggle (Client Only) - Top Placement */}
+        {!isAdmin && (
+          <div className="grid grid-cols-2 gap-2 p-1 bg-black/20 rounded-xl border border-white/5">
+            <button
+              onClick={() => setMode('text')}
+              className={cn(
+                "relative flex flex-col items-center justify-center gap-1 py-3 rounded-lg transition-all duration-300 overflow-hidden",
+                mode === 'text' ? "text-emerald-400" : "text-white/40 hover:text-white hover:bg-white/5"
+              )}
+            >
+              {mode === 'text' && (
+                <motion.div layoutId="modePill" className="absolute inset-0 bg-emerald-500/10 border border-emerald-500/20 rounded-lg" />
+              )}
+              <div className="relative z-10 flex flex-col items-center gap-1">
+                <MessageSquare className="w-4 h-4" />
+                <span className="text-[10px] font-bold tracking-wider">TEXT</span>
+              </div>
+            </button>
+
+            <button
+              onClick={() => setMode('voice')}
+              className={cn(
+                "relative flex flex-col items-center justify-center gap-1 py-3 rounded-lg transition-all duration-300 overflow-hidden",
+                mode === 'voice' ? "text-blue-400" : "text-white/40 hover:text-white hover:bg-white/5"
+              )}
+            >
+              {mode === 'voice' && (
+                <motion.div layoutId="modePill" className="absolute inset-0 bg-blue-500/10 border border-blue-500/20 rounded-lg" />
+              )}
+              <div className="relative z-10 flex flex-col items-center gap-1">
+                <Phone className="w-4 h-4" />
+                <span className="text-[10px] font-bold tracking-wider">VOICE</span>
+              </div>
+            </button>
+          </div>
+        )}
       </div>
 
-      <Separator className="bg-sidebar-border" />
-
       {/* Navigation */}
-      <nav className="flex-1 p-4 space-y-1">
+      <nav className="flex-1 px-4 space-y-2 mt-2">
         {navItems.map((item) => {
           const isActive = location.pathname === item.path;
           return (
@@ -79,19 +120,24 @@ export function DashboardSidebar() {
               key={item.path}
               variant="ghost"
               className={cn(
-                'w-full justify-start gap-3 h-11 px-4 font-medium transition-all',
+                'w-full justify-start gap-3 h-14 px-5 font-medium transition-all duration-300 relative overflow-hidden group',
                 isActive
-                  ? 'bg-sidebar-accent text-sidebar-primary'
-                  : 'text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-foreground'
+                  ? 'bg-white/5 text-white shadow-lg'
+                  : 'text-white/40 hover:text-white hover:bg-white/5'
               )}
               onClick={() => navigate(item.path)}
             >
-              <item.icon className={cn('w-5 h-5', isActive && 'text-primary')} />
-              {item.label}
+              {/* Active Indicator Line */}
               {isActive && (
-                <motion.div
-                  layoutId="activeNav"
-                  className="absolute left-0 w-1 h-6 bg-primary rounded-r-full"
+                <div className={cn("absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 rounded-r-full shadow-[0_0_10px_currentColor]", isAdmin ? 'bg-cyan-500' : 'bg-emerald-500')} />
+              )}
+
+              <item.icon className={cn('w-5 h-5 transition-colors', isActive ? (isAdmin ? 'text-cyan-400' : 'text-emerald-400') : 'group-hover:text-white')} />
+              <span className="tracking-wide text-sm">{item.label}</span>
+
+              {isActive && (
+                <div
+                  className={cn("absolute inset-0 opacity-10", isAdmin ? 'bg-cyan-500' : 'bg-emerald-500')}
                 />
               )}
             </Button>
@@ -99,33 +145,10 @@ export function DashboardSidebar() {
         })}
       </nav>
 
-      <Separator className="bg-sidebar-border" />
-
-      {/* User Profile */}
-      <div className="p-4">
-        <div className="glass-card p-4 rounded-xl space-y-4">
-          <div className="flex items-center gap-3">
-            <Avatar className="w-10 h-10 border-2 border-primary/20">
-              <AvatarImage src={user?.avatar} />
-              <AvatarFallback className="bg-primary/20 text-primary">
-                {user?.name?.charAt(0) || 'U'}
-              </AvatarFallback>
-            </Avatar>
-            <div className="flex-1 min-w-0">
-              <p className="font-medium text-sm truncate">{user?.name}</p>
-              <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
-            </div>
-          </div>
-          <Button
-            variant="ghost"
-            className="w-full justify-start gap-2 text-muted-foreground hover:text-destructive"
-            onClick={handleLogout}
-          >
-            <LogOut className="w-4 h-4" />
-            Sign Out
-          </Button>
-        </div>
+      {/* Footer */}
+      <div className="p-8 mt-auto text-center">
+        <p className="text-[10px] text-white/10 font-mono">v2.4.0 (Stable)</p>
       </div>
-    </motion.aside>
+    </aside>
   );
 }

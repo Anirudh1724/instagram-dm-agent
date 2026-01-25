@@ -56,12 +56,14 @@
 
     /* Gradients */
     --gradient-primary: linear-gradient(135deg, hsl(187 85% 53%) 0%, hsl(160 84% 39%) 100%);
-    --gradient-card: linear-gradient(135deg, hsl(222 47% 10%) 0%, hsl(222 47% 8%) 100%);
-    --gradient-glow: radial-gradient(circle at 50% 0%, hsl(187 85% 53% / 0.15) 0%, transparent 50%);
+    --gradient-card: linear-gradient(135deg, hsl(222 47% 10% / 0.8) 0%, hsl(222 47% 8% / 0.8) 100%);
+    --gradient-glow: radial-gradient(circle at 50% 0%, hsl(187 85% 53% / 0.25) 0%, transparent 60%);
+    --gradient-subtle: linear-gradient(180deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0) 100%);
 
     /* Shadows */
-    --shadow-glow: 0 0 40px -10px hsl(187 85% 53% / 0.3);
-    --shadow-card: 0 4px 24px -4px hsl(222 47% 4% / 0.5);
+    --shadow-glow: 0 0 50px -10px hsl(187 85% 53% / 0.25);
+    --shadow-card: 0 8px 32px -4px hsl(222 47% 4% / 0.6);
+    --shadow-inner: inset 0 0 20px 0 rgba(0, 0, 0, 0.2);
   }
 
   .dark {
@@ -78,47 +80,71 @@
   body {
     @apply bg-background text-foreground font-sans antialiased;
     font-family: 'Inter', system-ui, sans-serif;
+    background-image: 
+      radial-gradient(circle at 15% 50%, hsl(187 85% 53% / 0.08) 0%, transparent 25%),
+      radial-gradient(circle at 85% 30%, hsl(160 84% 39% / 0.08) 0%, transparent 25%);
+    background-attachment: fixed;
   }
 }
 
 @layer components {
   .glass-card {
-    @apply bg-card/80 backdrop-blur-xl border border-border/50 rounded-xl;
+    @apply bg-card/60 backdrop-blur-md border border-white/10 rounded-xl relative overflow-hidden;
     box-shadow: var(--shadow-card);
+    background-image: var(--gradient-subtle);
   }
 
-  .glass-card-hover {
-    @apply glass-card transition-all duration-300 hover:border-primary/30 hover:shadow-[var(--shadow-glow)];
-  }
-
-  .gradient-text {
-    @apply bg-clip-text text-transparent;
-    background-image: var(--gradient-primary);
-  }
-
-  .gradient-border {
-    position: relative;
-  }
-
-  .gradient-border::before {
+  .glass-card::before {
     content: '';
     position: absolute;
     inset: 0;
-    padding: 1px;
-    border-radius: inherit;
-    background: var(--gradient-primary);
-    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-    -webkit-mask-composite: xor;
-    mask-composite: exclude;
+    background: var(--gradient-glow);
+    opacity: 0.5;
+    pointer-events: none;
   }
 
-  .stat-glow {
-    box-shadow: var(--shadow-glow);
+  .glass-card-hover {
+    @apply glass-card transition-all duration-500 ease-out hover:border-primary/40 hover:shadow-[var(--shadow-glow)] hover:-translate-y-1;
   }
 
-  .animate-pulse-slow {
-    animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  .gradient-text {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-primary via-accent to-primary bg-[length:200%_auto] animate-shimmer;
+  }
+
+  .input-premium {
+    @apply bg-secondary/30 border-white/10 focus:border-primary/50 focus:bg-secondary/50 focus:ring-1 focus:ring-primary/20 transition-all duration-300;
+  }
+
+  .button-premium {
+    @apply relative overflow-hidden transition-all duration-300 shadow-lg hover:shadow-primary/25 active:scale-95;
+  }
+
+  .button-premium::after {
+    content: '';
+    @apply absolute inset-0 bg-white/20 translate-x-[-100%] skew-x-[-15deg] transition-transform duration-500;
+  }
+
+  .button-premium:hover::after {
+    @apply translate-x-[100%];
+  }
+
+  /* Animations */
+  @keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-10px); }
+  }
+
+  @keyframes pulse-glow {
+    0%, 100% { opacity: 0.5; transform: scale(1); }
+    50% { opacity: 1; transform: scale(1.05); }
+  }
+
+  .animate-float {
+    animation: float 6s ease-in-out infinite;
+  }
+
+  .animate-pulse-glow {
+    animation: pulse-glow 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
   }
 }
 
@@ -141,4 +167,8 @@
     background: hsl(var(--muted));
     border-radius: 3px;
   }
+  
+  .delay-100 { animation-delay: 100ms; }
+  .delay-200 { animation-delay: 200ms; }
+  .delay-300 { animation-delay: 300ms; }
 }

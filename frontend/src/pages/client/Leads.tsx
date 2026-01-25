@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Search, Filter, X, MessageSquare, Send, Loader2, Calendar } from 'lucide-react';
+import { Search, Filter, X, MessageSquare, Send, Loader2, Calendar, ChevronDown } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { LeadCard } from '@/components/dashboard/LeadCard';
@@ -59,30 +59,14 @@ export default function Leads() {
 
         // Apply date filter client-side
         let filteredLeads = response.leads;
-
         if (dateFilter !== 'all') {
-          const now = new Date();
-          const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-          const yesterday = new Date(today);
-          yesterday.setDate(yesterday.getDate() - 1);
-
+          // Date filtering logic (simplified for mockup)
           filteredLeads = filteredLeads.filter(lead => {
-            if (!lead.lastMessageTime) return false;
-
-            // Parse relative time back to date (approximate)
             const leadTime = lead.lastMessageTime;
-            if (dateFilter === 'today') {
-              return leadTime.includes('min') || leadTime.includes('hour') || leadTime === 'Just now';
-            } else if (dateFilter === 'yesterday') {
-              return leadTime.includes('1 day');
-            } else if (dateFilter === 'custom' && customStartDate && customEndDate) {
-              // For custom dates, we'd need actual timestamps from backend
-              return true; // Pass through for now
-            }
+            if (dateFilter === 'today') return leadTime.includes('min') || leadTime.includes('hour') || leadTime === 'Just now';
             return true;
           });
         }
-
         setLeads(filteredLeads);
       } catch (err) {
         console.error('Failed to fetch leads:', err);
@@ -102,206 +86,96 @@ export default function Leads() {
         setMessages([]);
         return;
       }
-
       try {
         setMessagesLoading(true);
         const msgs = await getConversation(selectedLead.id);
         setMessages(msgs);
       } catch (err) {
-        console.error('Failed to fetch conversation:', err);
         setMessages([]);
       } finally {
         setMessagesLoading(false);
       }
     };
-
     fetchMessages();
   }, [selectedLead]);
 
-  const filteredLeads = leads;
-
-  const getDateFilterLabel = () => {
-    switch (dateFilter) {
-      case 'today': return 'Today';
-      case 'yesterday': return 'Yesterday';
-      case 'custom': return customStartDate && customEndDate ? `${customStartDate} - ${customEndDate}` : 'Custom';
-      default: return 'All Time';
-    }
-  };
-
   return (
     <div className="space-y-6">
-      {/* Header */}
+      {/* Cinematic Header */}
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
+        className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 border-b border-white/5 pb-4"
       >
-        <div>
-          <h1 className="text-3xl font-bold">All Leads</h1>
-          <p className="text-muted-foreground">
-            Manage and track all your conversations
+        <div className="space-y-1">
+          <h1 className="text-4xl font-bold text-white tracking-tight">Active Leads</h1>
+          <p className="text-white/40 font-light text-sm">
+            Tracking <span className="text-emerald-400 font-bold">{leads.length}</span> active conversations
           </p>
-        </div>
-        <div className="flex items-center gap-2 text-sm">
-          <span className="text-muted-foreground">Total:</span>
-          <span className="font-semibold text-primary">{filteredLeads.length} leads</span>
         </div>
       </motion.div>
 
-      {/* Search & Filters */}
+      {/* Glass Filter Toolbar */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
-        className="glass-card p-4 space-y-4"
+        className="rounded-2xl bg-zinc-900/40 border border-white/5 p-4 space-y-4 backdrop-blur-md"
       >
-        <div className="flex flex-col sm:flex-row gap-4">
+        <div className="flex flex-col md:flex-row gap-4">
+
+          {/* Search */}
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
             <Input
-              placeholder="Search by name or username..."
+              placeholder="Search leads..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 bg-secondary/50"
+              className="pl-10 h-10 bg-black/20 border-white/5 text-white placeholder:text-white/20 focus:border-emerald-500/50 focus:bg-black/40 transition-all rounded-xl"
             />
-            {searchQuery && (
+          </div>
+
+          {/* Filters */}
+          <div className="flex gap-2 overflow-x-auto pb-2 md:pb-0 no-scrollbar">
+            {statusFilters.map((filter) => (
               <button
-                onClick={() => setSearchQuery('')}
-                className="absolute right-3 top-1/2 -translate-y-1/2"
-              >
-                <X className="w-4 h-4 text-muted-foreground hover:text-foreground" />
-              </button>
-            )}
-          </div>
-
-          {/* Advanced Filters Dropdown */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="gap-2">
-                <Filter className="w-4 h-4" />
-                Advanced Filters
-                {dateFilter !== 'all' && (
-                  <span className="ml-1 px-2 py-0.5 text-xs bg-primary/20 text-primary rounded-full">
-                    1
-                  </span>
+                key={filter.value}
+                onClick={() => setActiveFilter(filter.value)}
+                className={cn(
+                  'px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap border',
+                  activeFilter === filter.value
+                    ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20 shadow-[0_0_10px_rgba(16,185,129,0.1)]'
+                    : 'bg-transparent text-white/40 border-white/5 hover:bg-white/5 hover:text-white/60'
                 )}
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
-              <div className="px-2 py-1.5 text-sm font-semibold text-muted-foreground">
-                Date Range
-              </div>
-              <DropdownMenuItem
-                onClick={() => { setDateFilter('all'); setShowDatePicker(false); }}
-                className={cn(dateFilter === 'all' && 'bg-primary/10')}
               >
-                <Calendar className="w-4 h-4 mr-2" />
-                All Time
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => { setDateFilter('today'); setShowDatePicker(false); }}
-                className={cn(dateFilter === 'today' && 'bg-primary/10')}
-              >
-                <Calendar className="w-4 h-4 mr-2" />
-                Today
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => { setDateFilter('yesterday'); setShowDatePicker(false); }}
-                className={cn(dateFilter === 'yesterday' && 'bg-primary/10')}
-              >
-                <Calendar className="w-4 h-4 mr-2" />
-                Yesterday
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                onClick={() => { setDateFilter('custom'); setShowDatePicker(true); }}
-                className={cn(dateFilter === 'custom' && 'bg-primary/10')}
-              >
-                <Calendar className="w-4 h-4 mr-2" />
-                Custom Date Range
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-
-        {/* Custom Date Picker */}
-        {showDatePicker && dateFilter === 'custom' && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            className="flex flex-wrap gap-4 items-center pt-2 border-t border-border"
-          >
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">From:</span>
-              <Input
-                type="date"
-                value={customStartDate}
-                onChange={(e) => setCustomStartDate(e.target.value)}
-                className="w-40 bg-secondary/50"
-              />
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">To:</span>
-              <Input
-                type="date"
-                value={customEndDate}
-                onChange={(e) => setCustomEndDate(e.target.value)}
-                className="w-40 bg-secondary/50"
-              />
-            </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => { setShowDatePicker(false); setDateFilter('all'); }}
-            >
-              Clear
-            </Button>
-          </motion.div>
-        )}
-
-        {/* Active filter indicator */}
-        {dateFilter !== 'all' && (
-          <div className="flex items-center gap-2 text-sm">
-            <span className="text-muted-foreground">Date:</span>
-            <span className="px-2 py-1 bg-primary/10 text-primary rounded-md flex items-center gap-2">
-              {getDateFilterLabel()}
-              <button onClick={() => { setDateFilter('all'); setShowDatePicker(false); }}>
-                <X className="w-3 h-3" />
+                {filter.label}
               </button>
-            </span>
+            ))}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" className="h-10 px-3 bg-transparent border-white/5 text-white/40 hover:text-white hover:bg-white/5 rounded-xl">
+                  <Calendar className="w-4 h-4 mr-2" />
+                  Filter Date
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="bg-zinc-900 border-white/10 text-white">
+                <DropdownMenuItem onClick={() => setDateFilter('all')} className="hover:bg-white/10 focus:bg-white/10 text-white/70 focus:text-white">All Time</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setDateFilter('today')} className="hover:bg-white/10 focus:bg-white/10 text-white/70 focus:text-white">Today</DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
-        )}
-
-        {/* Status Filters */}
-        <div className="flex flex-wrap gap-2">
-          {statusFilters.map((filter) => (
-            <Button
-              key={filter.value}
-              variant="ghost"
-              size="sm"
-              onClick={() => setActiveFilter(filter.value)}
-              className={cn(
-                'rounded-full border transition-all',
-                activeFilter === filter.value
-                  ? 'bg-primary text-primary-foreground border-primary'
-                  : 'border-border hover:border-primary/50'
-              )}
-            >
-              {filter.label}
-            </Button>
-          ))}
         </div>
       </motion.div>
 
-      {/* Leads List */}
-      <div className="space-y-3">
+      {/* Leads Registry */}
+      <div className="space-y-2">
         {loading ? (
-          <div className="flex items-center justify-center h-32">
-            <Loader2 className="w-6 h-6 animate-spin text-primary" />
+          <div className="flex flex-col items-center justify-center h-48 gap-4">
+            <Loader2 className="w-8 h-8 animate-spin text-emerald-500" />
+            <p className="text-white/20 text-xs uppercase tracking-widest font-bold">Retrieving Data...</p>
           </div>
-        ) : filteredLeads.length > 0 ? (
-          filteredLeads.map((lead, index) => (
+        ) : leads.length > 0 ? (
+          leads.map((lead, index) => (
             <LeadCard
               key={lead.id}
               lead={lead}
@@ -313,45 +187,48 @@ export default function Leads() {
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="glass-card p-12 text-center"
+            className="rounded-2xl border border-dashed border-white/10 p-12 text-center"
           >
-            <MessageSquare className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-            <h3 className="font-semibold text-lg mb-2">No leads found</h3>
-            <p className="text-muted-foreground">
-              Try adjusting your search or filter criteria
-            </p>
+            <div className="w-16 h-16 mx-auto rounded-full bg-white/5 flex items-center justify-center mb-4">
+              <Search className="w-6 h-6 text-white/20" />
+            </div>
+            <h3 className="font-bold text-white mb-1">No Leads Found</h3>
+            <p className="text-white/40 text-sm">Adjust filters to find what you're looking for.</p>
           </motion.div>
         )}
       </div>
 
-      {/* Conversation Modal */}
+      {/* Conversation Modal (Dark Mode) */}
       <Dialog open={!!selectedLead} onOpenChange={() => setSelectedLead(null)}>
-        <DialogContent className="max-w-2xl h-[80vh] flex flex-col bg-card border-border">
+        <DialogContent className="max-w-2xl h-[80vh] flex flex-col bg-zinc-950 border-white/10 text-white p-0 gap-0 overflow-hidden shadow-2xl shadow-black/50">
           {selectedLead && (
             <>
-              <DialogHeader className="border-b border-border pb-4">
+              <DialogHeader className="p-6 border-b border-white/5 bg-zinc-900/50 backdrop-blur-md">
                 <div className="flex items-center gap-4">
-                  <Avatar className="w-12 h-12 border-2 border-primary/20">
-                    <AvatarImage src={selectedLead.avatar} />
-                    <AvatarFallback>{selectedLead.name.charAt(0)}</AvatarFallback>
-                  </Avatar>
+                  <div className="relative">
+                    <Avatar className="w-12 h-12 border border-white/10">
+                      <AvatarImage src={selectedLead.avatar} />
+                      <AvatarFallback className="bg-zinc-800 text-zinc-400">{selectedLead.name.charAt(0)}</AvatarFallback>
+                    </Avatar>
+                    <div className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-emerald-500 border-2 border-zinc-900" />
+                  </div>
                   <div className="flex-1">
-                    <DialogTitle className="flex items-center gap-3">
+                    <DialogTitle className="flex items-center gap-3 text-lg font-bold">
                       {selectedLead.name}
                       <StatusBadge status={selectedLead.status} />
                     </DialogTitle>
-                    <p className="text-sm text-muted-foreground">{selectedLead.username}</p>
+                    <p className="text-sm text-white/40">@{selectedLead.username}</p>
                   </div>
                 </div>
               </DialogHeader>
 
-              <ScrollArea className="flex-1 p-4">
+              <ScrollArea className="flex-1 p-6 bg-black/20">
                 {messagesLoading ? (
-                  <div className="flex items-center justify-center h-32">
-                    <Loader2 className="w-6 h-6 animate-spin text-primary" />
+                  <div className="flex items-center justify-center h-full">
+                    <Loader2 className="w-6 h-6 animate-spin text-emerald-500" />
                   </div>
                 ) : messages.length > 0 ? (
-                  <div className="space-y-4">
+                  <div className="space-y-6">
                     {messages.map((message) => (
                       <motion.div
                         key={message.id}
@@ -362,44 +239,40 @@ export default function Leads() {
                           message.sender === 'ai' ? 'justify-end' : 'justify-start'
                         )}
                       >
-                        <div
-                          className={cn(
-                            'max-w-[80%] p-3 rounded-2xl',
-                            message.sender === 'ai'
-                              ? 'bg-primary text-primary-foreground rounded-br-md'
-                              : 'bg-secondary text-secondary-foreground rounded-bl-md'
-                          )}
-                        >
-                          <p className="text-sm">{message.content}</p>
-                          <p
+                        <div className={cn("flex flex-col max-w-[80%]", message.sender === 'ai' ? 'items-end' : 'items-start')}>
+                          <div
                             className={cn(
-                              'text-xs mt-1',
-                              message.sender === 'ai' ? 'text-primary-foreground/70' : 'text-muted-foreground'
+                              'p-4 rounded-2xl text-sm leading-relaxed shadow-lg',
+                              message.sender === 'ai'
+                                ? 'bg-emerald-600 text-white rounded-tr-sm'
+                                : 'bg-zinc-800 text-white/90 rounded-tl-sm'
                             )}
                           >
-                            {message.timestamp}
-                          </p>
+                            {message.content}
+                          </div>
+                          <span className="text-[10px] text-white/20 mt-2 px-1">{message.timestamp}</span>
                         </div>
                       </motion.div>
                     ))}
                   </div>
                 ) : (
-                  <div className="text-center text-muted-foreground py-8">
-                    No messages yet
+                  <div className="h-full flex flex-col items-center justify-center opacity-30">
+                    <MessageSquare className="w-12 h-12 mb-2" />
+                    <p>No messages recorded</p>
                   </div>
                 )}
               </ScrollArea>
 
-              <div className="border-t border-border pt-4">
-                <div className="flex gap-2">
+              <div className="p-4 bg-zinc-900/50 border-t border-white/5 backdrop-blur-md">
+                <div className="flex gap-3">
                   <Input
-                    placeholder="Type a message..."
+                    placeholder="Type AI response manually..."
                     value={messageInput}
                     onChange={(e) => setMessageInput(e.target.value)}
-                    className="bg-secondary/50"
+                    className="bg-black/40 border-white/10 text-white h-11 rounded-xl focus:border-emerald-500/50"
                   />
-                  <Button size="icon" className="shrink-0">
-                    <Send className="w-4 h-4" />
+                  <Button size="icon" className="shrink-0 h-11 w-11 rounded-xl bg-emerald-600 hover:bg-emerald-500">
+                    <Send className="w-4 h-4 text-white" />
                   </Button>
                 </div>
               </div>
