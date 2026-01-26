@@ -208,6 +208,44 @@ class RedisConfigStore:
 
 
 
+# Mock Redis for fallback
+class MockRedis:
+    def __init__(self):
+        self._data = {}
+        self._expiries = {}
+        logger.warning("using_mock_redis_fallback", message="Redis not available. Using in-memory storage. Data will be lost on restart.")
+
+    def get(self, key):
+        return self._data.get(key)
+
+    def set(self, key, value):
+        self._data[key] = value
+        return True
+    
+    def setex(self, key, time, value):
+        self._data[key] = value
+        # Note: Expiry not implemented for mock, but that's fine for simple sessions
+        return True
+
+    def delete(self, key):
+        if key in self._data:
+            del self._data[key]
+            return 1
+        return 0
+
+    def keys(self, pattern="*"):
+        # Simple pattern matching (only supports prefix*)
+        if pattern.endswith("*"):
+            prefix = pattern[:-1]
+            return [k for k in self._data.keys() if k.startswith(prefix)]
+        return list(self._data.keys())
+
+    def exists(self, key):
+        return 1 if key in self._data else 0
+        
+    def ping(self):
+        return True
+
 # Global instance
 _redis_store: Optional[RedisConfigStore] = None
 
@@ -215,6 +253,25 @@ _redis_store: Optional[RedisConfigStore] = None
 def get_redis_store() -> RedisConfigStore:
     """Get the global Redis config store instance."""
     global _redis_store
+    
+    # If store exists but redis connection failed previously, allow retrying (handled in _get_redis)
     if _redis_store is None:
         _redis_store = RedisConfigStore()
     return _redis_store
+
+# Patch RedisConfigStore._get_redis to use fallback
+def _patched_get_redis(self):
+    """Lazy initialize Redis connection with fallback."""
+    if self._redis is None:
+        try:
+            r = redis.from_url(self._redis_url, decode_responses=True)
+            # Test connection
+            r.ping()
+            self._redis = r
+            logger.info("redis_connected", url=self._redis_url)
+        except (redis.ConnectionError, redis.TimeoutError) as e:
+            logger.warning("redis_connection_failed_fallback", error=str(e))
+            self._redis = MockRedis()
+    return self._redis
+
+RedisConfigStore._get_redis = _patched_get_redis

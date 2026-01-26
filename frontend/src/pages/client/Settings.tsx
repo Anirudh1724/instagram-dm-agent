@@ -1,14 +1,14 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Instagram, Settings as SettingsIcon, CheckCircle, XCircle, Loader2 } from 'lucide-react';
+import { Instagram, Settings as SettingsIcon, CheckCircle, XCircle, Loader2, Save } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
 import { getInstagramConnectUrl } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
+import { cn } from '@/lib/utils';
 
 export default function Settings() {
   const [isConnecting, setIsConnecting] = useState(false);
@@ -19,172 +19,147 @@ export default function Settings() {
   const handleConnect = async () => {
     setIsConnecting(true);
     try {
-      // Redirect to Instagram OAuth
       const connectUrl = getInstagramConnectUrl();
       window.location.href = connectUrl;
     } catch (error) {
-      toast({
-        title: 'Connection Failed',
-        description: 'Failed to start Instagram connection. Please try again.',
-        variant: 'destructive',
-      });
+      toast({ title: 'Connection Failed', description: 'Failed to start Instagram connection.', variant: 'destructive' });
       setIsConnecting(false);
     }
   };
 
   const handleDisconnect = () => {
     setIsConnected(false);
-    toast({
-      title: 'Instagram Disconnected',
-      description: 'Your Instagram account has been disconnected.',
-    });
+    toast({ title: 'Disconnected', description: 'Instagram account disconnected.' });
   };
 
   return (
-    <div className="space-y-8 max-w-3xl">
+    <div className="space-y-8 max-w-4xl mx-auto">
       {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="space-y-2"
+        className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-white/5 pb-4"
       >
-        <h1 className="text-3xl font-bold">Settings</h1>
-        <p className="text-muted-foreground">
-          Manage your account settings and integrations
-        </p>
+        <div className="space-y-1">
+          <h1 className="text-4xl font-bold text-white tracking-tight">System Settings</h1>
+          <p className="text-white/40 font-light text-sm">
+            Integrations and account configuration
+          </p>
+        </div>
       </motion.div>
 
-      {/* Instagram Connection */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.1 }}
-        className="glass-card p-6 space-y-6"
-      >
-        <div className="flex items-center gap-3">
-          <div className="p-2 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500">
-            <Instagram className="w-5 h-5 text-white" />
-          </div>
-          <div>
-            <h2 className="text-lg font-semibold">Instagram Connection</h2>
-            <p className="text-sm text-muted-foreground">
-              Connect your Instagram account to enable AI messaging
-            </p>
-          </div>
-        </div>
 
-        <Separator className="bg-border/50" />
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        {/* Instagram Connect - Premium Card */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="rounded-3xl bg-zinc-900/40 border border-white/5 backdrop-blur-xl p-8 space-y-6 relative overflow-hidden group"
+        >
+          <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-purple-500/50 to-transparent opacity-50" />
 
-        <div className="space-y-4">
-          {isConnected ? (
-            <div className="flex items-center justify-between p-4 rounded-lg bg-success/10 border border-success/20">
-              <div className="flex items-center gap-3">
-                <CheckCircle className="w-5 h-5 text-success" />
-                <div>
-                  <p className="font-medium">Connected</p>
-                  <p className="text-sm text-muted-foreground">Your Instagram account is connected</p>
+          <div className="flex items-center gap-4">
+            <div className="p-3 rounded-xl bg-gradient-to-br from-purple-600 to-pink-600 shadow-lg shadow-purple-900/30">
+              <Instagram className="w-6 h-6 text-white" />
+            </div>
+            <div>
+              <h2 className="text-xl font-bold text-white">Instagram Integration</h2>
+              <p className="text-xs text-white/40 uppercase tracking-widest">Connect Account</p>
+            </div>
+          </div>
+
+          <div className="p-6 rounded-2xl bg-black/20 border border-white/5">
+            {isConnected ? (
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_10px_#10b981]" />
+                  <div>
+                    <p className="text-white font-medium">Active Connection</p>
+                    <p className="text-xs text-emerald-400">@lumoscale</p>
+                  </div>
                 </div>
+                <Button variant="outline" onClick={handleDisconnect} className="border-red-500/30 text-red-400 hover:bg-red-500/10">Disconnect</Button>
               </div>
-              <Button variant="outline" size="sm" onClick={handleDisconnect}>
-                Disconnect
+            ) : (
+              <div className="flex flex-col gap-4">
+                <div className="flex gap-3">
+                  <div className="w-2 h-2 rounded-full bg-white/20 mt-2" />
+                  <p className="text-sm text-white/60 leading-relaxed">Connect your professional Instagram account to enable AI auto-responses and lead tracking.</p>
+                </div>
+                <Button onClick={handleConnect} disabled={isConnecting} className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white shadow-lg shadow-purple-900/20 py-6 text-base font-bold rounded-xl">
+                  {isConnecting ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : <Instagram className="w-5 h-5 mr-2" />}
+                  Connect Instagram
+                </Button>
+              </div>
+            )}
+          </div>
+        </motion.div>
+
+        {/* General Settings */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          className="space-y-6"
+        >
+          {/* Profile */}
+          <div className="rounded-3xl bg-zinc-900/40 border border-white/5 backdrop-blur-xl p-8 space-y-6">
+            <div className="flex items-center gap-4 mb-6">
+              <div className="p-3 rounded-xl bg-gradient-to-br from-zinc-700 to-zinc-800 shadow-lg">
+                <SettingsIcon className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold text-white">Account Details</h2>
+                <p className="text-xs text-white/40 uppercase tracking-widest">Profile Configuration</p>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label className="text-white/60 text-xs uppercase tracking-wider">Business Name</Label>
+                <Input defaultValue={user?.name || ''} className="bg-black/20 border-white/10 text-white rounded-xl h-11 focus:border-white/20 transition-all font-medium" />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-white/60 text-xs uppercase tracking-wider">Email Address</Label>
+                <Input defaultValue={user?.email || ''} className="bg-black/20 border-white/10 text-white rounded-xl h-11 focus:border-white/20 transition-all font-medium" />
+              </div>
+              <Button className="w-full bg-white/10 hover:bg-white/20 text-white h-11 rounded-xl">
+                <Save className="w-4 h-4 mr-2" />
+                Save Changes
               </Button>
             </div>
-          ) : (
-            <div className="flex items-center justify-between p-4 rounded-lg bg-secondary/50 border border-border">
-              <div className="flex items-center gap-3">
-                <XCircle className="w-5 h-5 text-muted-foreground" />
-                <div>
-                  <p className="font-medium">No account connected</p>
-                  <p className="text-sm text-muted-foreground">Connect to start receiving leads</p>
-                </div>
-              </div>
-              <Button onClick={handleConnect} disabled={isConnecting} className="gap-2">
-                {isConnecting ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <Instagram className="w-4 h-4" />
-                )}
-                Connect Instagram
-              </Button>
-            </div>
-          )}
-        </div>
-      </motion.div>
+          </div>
+        </motion.div>
+      </div>
 
-      {/* Notification Settings */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.2 }}
-        className="glass-card p-6 space-y-6"
-      >
-        <div className="flex items-center gap-3">
-          <div className="p-2 rounded-lg bg-primary/20 text-primary">
-            <SettingsIcon className="w-5 h-5" />
-          </div>
-          <div>
-            <h2 className="text-lg font-semibold">Notifications</h2>
-            <p className="text-sm text-muted-foreground">
-              Configure how you receive updates
-            </p>
-          </div>
-        </div>
-
-        <Separator className="bg-border/50" />
-
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <Label>New Lead Alerts</Label>
-              <p className="text-sm text-muted-foreground">Get notified when new leads arrive</p>
-            </div>
-            <Switch defaultChecked />
-          </div>
-          <div className="flex items-center justify-between">
-            <div>
-              <Label>Booking Confirmations</Label>
-              <p className="text-sm text-muted-foreground">Alerts when leads book appointments</p>
-            </div>
-            <Switch defaultChecked />
-          </div>
-          <div className="flex items-center justify-between">
-            <div>
-              <Label>Weekly Reports</Label>
-              <p className="text-sm text-muted-foreground">Receive weekly analytics summary</p>
-            </div>
-            <Switch defaultChecked />
-          </div>
-          <div className="flex items-center justify-between">
-            <div>
-              <Label>AI Performance Alerts</Label>
-              <p className="text-sm text-muted-foreground">Notify when AI metrics drop below target</p>
-            </div>
-            <Switch />
-          </div>
-        </div>
-      </motion.div>
-
-      {/* Account Settings */}
+      {/* Notifications */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.3 }}
-        className="glass-card p-6 space-y-6"
+        className="rounded-3xl bg-zinc-900/40 border border-white/5 backdrop-blur-xl p-8"
       >
-        <h2 className="text-lg font-semibold">Account Information</h2>
-
-        <div className="grid gap-4">
-          <div className="space-y-2">
-            <Label htmlFor="email">Email Address</Label>
-            <Input id="email" defaultValue={user?.email || ''} className="bg-secondary/50" />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="business">Business Name</Label>
-            <Input id="business" defaultValue={user?.name || ''} className="bg-secondary/50" />
-          </div>
+        <h2 className="text-lg font-bold text-white mb-6 flex items-center gap-2">
+          <span className="w-1 h-5 rounded-full bg-blue-500" />
+          Notification Preferences
+        </h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          {[
+            { label: 'New Lead Alerts', desc: 'Instant notification on new inquiry' },
+            { label: 'Booking Confirmations', desc: 'Alerts for scheduled appointments' },
+            { label: 'Weekly Reports', desc: 'Digest of performance metrics' },
+            { label: 'AI Intervention', desc: 'When AI needs human assistance' }
+          ].map((item, i) => (
+            <div key={i} className="flex items-center justify-between p-4 rounded-xl bg-white/[0.02] border border-white/5">
+              <div>
+                <p className="font-bold text-white text-sm">{item.label}</p>
+                <p className="text-xs text-white/40">{item.desc}</p>
+              </div>
+              <Switch />
+            </div>
+          ))}
         </div>
-
-        <Button>Save Changes</Button>
       </motion.div>
     </div>
   );

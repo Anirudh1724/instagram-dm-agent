@@ -33,8 +33,8 @@ class Settings(BaseSettings):
     
     # Admin authentication
     admin_api_key: str = ""
-    admin_email: str = "admin@admin.com"  # Default admin email
-    admin_password: str = "admin123"  # Default admin password (change in production!)
+    admin_email: str = "admin@lumoscale.in"  # Default admin email
+    admin_password: str = "Lumoscale@123"  # Default admin password (change in production!)
     
     # Base URL (for webhook info)
     base_url: str = "http://localhost:8000"
