@@ -3,7 +3,7 @@ Instagram OAuth endpoints.
 Handles the OAuth flow for connecting Instagram Business accounts.
 """
 
-import os
+
 import secrets
 import json
 from datetime import datetime, timedelta
@@ -23,19 +23,16 @@ logger = get_logger("api.instagram_oauth")
 
 router = APIRouter(prefix="/api/auth/instagram", tags=["instagram-oauth"])
 
-# Meta OAuth URLs
-META_OAUTH_URL = "https://www.facebook.com/v21.0/dialog/oauth"
-META_TOKEN_URL = "https://graph.facebook.com/v21.0/oauth/access_token"
-META_GRAPH_URL = "https://graph.facebook.com/v21.0"
+# Instagram OAuth URLs (Instagram API with Instagram Login)
+INSTAGRAM_OAUTH_URL = "https://www.instagram.com/oauth/authorize"
+INSTAGRAM_TOKEN_URL = "https://api.instagram.com/oauth/access_token"
+INSTAGRAM_GRAPH_URL = "https://graph.instagram.com"
 
 # Required permissions for Instagram DM automation
+# Uses the new Instagram API with Instagram Login scopes
 REQUIRED_SCOPES = [
-    "instagram_basic",
-    #"instagram_manage_messages", 
-    "pages_show_list",
-    #"pages_messaging",
-    #"pages_read_engagement",
-    #"business_management",
+    "instagram_business_basic",
+    "instagram_business_manage_messages",
 ]
 
 
@@ -63,7 +60,7 @@ async def start_oauth(
 ):
     """
     Start the Instagram OAuth flow.
-    Redirects the user to Meta's OAuth authorization page.
+    Redirects the user to Instagram's OAuth authorization page.
     """
     settings = get_settings()
     
@@ -88,16 +85,17 @@ async def start_oauth(
     r = redis_store._get_redis()
     r.setex(f"oauth_state:{state_token}", timedelta(minutes=10), state_data.model_dump_json())
     
-    # Build OAuth URL
+    # Build Instagram OAuth URL (Instagram API with Instagram Login)
     oauth_params = {
         "client_id": app_id,
         "redirect_uri": redirect_uri,
         "scope": ",".join(REQUIRED_SCOPES),
         "response_type": "code",
         "state": state_token,
+        "enable_fb_login": "0",  # Force Instagram-only login, no Facebook option
     }
     
-    oauth_url = f"{META_OAUTH_URL}?{urlencode(oauth_params)}"
+    oauth_url = f"{INSTAGRAM_OAUTH_URL}?{urlencode(oauth_params)}"
     
     logger.info("oauth_started", client_id=client_id, state=state_token[:8])
     
@@ -112,8 +110,8 @@ async def oauth_callback(
     error_description: Optional[str] = Query(None),
 ):
     """
-    Handle OAuth callback from Meta.
-    Exchanges the authorization code for an access token.
+    Handle OAuth callback from Instagram.
+    Exchanges the authorization code for an access token using Instagram API with Instagram Login.
     """
     settings = get_settings()
     
@@ -137,18 +135,19 @@ async def oauth_callback(
     state_data = OAuthState.model_validate_json(state_data_raw)
     r.delete(f"oauth_state:{state}")  # Clean up state
     
-    # Exchange code for access token
-    app_id = os.getenv("META_APP_ID", settings.instagram_account_id)
-    app_secret = os.getenv("META_APP_SECRET", settings.meta_app_secret)
-    redirect_uri = os.getenv("OAUTH_REDIRECT_URI", f"{settings.base_url}/api/auth/instagram/callback")
+    # Get app credentials
+    app_id = settings.meta_app_id
+    app_secret = settings.meta_app_secret
+    redirect_uri = settings.oauth_redirect_uri or f"{settings.base_url}/api/auth/instagram/callback"
     
     async with httpx.AsyncClient() as client:
-        # Step 1: Exchange code for short-lived token
-        token_response = await client.get(
-            META_TOKEN_URL,
-            params={
+        # Step 1: Exchange code for short-lived token (Instagram requires POST)
+        token_response = await client.post(
+            INSTAGRAM_TOKEN_URL,
+            data={
                 "client_id": app_id,
                 "client_secret": app_secret,
+                "grant_type": "authorization_code",
                 "redirect_uri": redirect_uri,
                 "code": code,
             }
@@ -160,89 +159,58 @@ async def oauth_callback(
         
         token_data = token_response.json()
         short_lived_token = token_data.get("access_token")
+        user_id = token_data.get("user_id")  # Instagram user ID is returned directly
         
-        # Step 2: Exchange for long-lived token
+        if not short_lived_token or not user_id:
+            logger.error("oauth_missing_token_or_user_id", response=token_data)
+            return RedirectResponse(url=f"{state_data.redirect_after}?error=invalid_token_response")
+        
+        # Step 2: Exchange for long-lived token (Instagram endpoint)
         long_lived_response = await client.get(
-            META_TOKEN_URL,
+            f"{INSTAGRAM_GRAPH_URL}/access_token",
             params={
-                "grant_type": "fb_exchange_token",
-                "client_id": app_id,
+                "grant_type": "ig_exchange_token",
                 "client_secret": app_secret,
-                "fb_exchange_token": short_lived_token,
+                "access_token": short_lived_token,
             }
         )
         
         if long_lived_response.status_code != 200:
             logger.warning("long_lived_token_failed", using_short_lived=True)
             access_token = short_lived_token
-            token_expires_in = token_data.get("expires_in", 3600)
+            token_expires_in = 3600  # Short-lived tokens last ~1 hour
         else:
             long_lived_data = long_lived_response.json()
             access_token = long_lived_data.get("access_token", short_lived_token)
             token_expires_in = long_lived_data.get("expires_in", 5184000)  # ~60 days
         
-        # Step 3: Get user's Facebook Pages
-        pages_response = await client.get(
-            f"{META_GRAPH_URL}/me/accounts",
-            params={"access_token": access_token}
-        )
-        
-        if pages_response.status_code != 200:
-            logger.error("pages_fetch_failed", response=pages_response.text)
-            return RedirectResponse(url=f"{state_data.redirect_after}?error=pages_fetch_failed")
-        
-        pages_data = pages_response.json()
-        pages = pages_data.get("data", [])
-        
-        if not pages:
-            logger.warning("no_pages_found")
-            return RedirectResponse(url=f"{state_data.redirect_after}?error=no_pages_found")
-        
-        # Use the first page (or could show a page selector)
-        page = pages[0]
-        page_id = page.get("id")
-        page_name = page.get("name")
-        page_access_token = page.get("access_token")
-        
-        # Step 4: Get Instagram Business Account connected to this page
-        ig_response = await client.get(
-            f"{META_GRAPH_URL}/{page_id}",
-            params={
-                "fields": "instagram_business_account",
-                "access_token": page_access_token,
-            }
-        )
-        
-        ig_data = ig_response.json()
-        ig_account = ig_data.get("instagram_business_account", {})
-        ig_account_id = ig_account.get("id")
-        
-        if not ig_account_id:
-            logger.warning("no_instagram_account", page_id=page_id)
-            return RedirectResponse(url=f"{state_data.redirect_after}?error=no_instagram_account")
-        
-        # Step 5: Get Instagram account details
+        # Step 3: Get Instagram account details directly (no need for Facebook Pages!)
         ig_details_response = await client.get(
-            f"{META_GRAPH_URL}/{ig_account_id}",
+            f"{INSTAGRAM_GRAPH_URL}/me",
             params={
-                "fields": "username,name,profile_picture_url,followers_count",
-                "access_token": page_access_token,
+                "fields": "user_id,username,name,profile_picture_url,followers_count,account_type",
+                "access_token": access_token,
             }
         )
+        
+        if ig_details_response.status_code != 200:
+            logger.error("ig_details_fetch_failed", response=ig_details_response.text)
+            return RedirectResponse(url=f"{state_data.redirect_after}?error=ig_details_failed")
         
         ig_details = ig_details_response.json()
+        ig_account_id = ig_details.get("user_id") or str(user_id)
         
-        # Step 6: Save client data to Redis
+        # Step 4: Save client data to Redis
         client_id = state_data.client_id or ig_account_id
         
         client_config = {
             "client_id": client_id,
-            "business_name": ig_details.get("name") or page_name,
+            "business_name": ig_details.get("name") or ig_details.get("username", ""),
             "instagram_username": ig_details.get("username", ""),
             "instagram_account_id": ig_account_id,
             "instagram_graph_id": ig_account_id,
-            "page_id": page_id,
-            "meta_access_token": page_access_token,
+            "account_type": ig_details.get("account_type", ""),  # BUSINESS or CREATOR
+            "meta_access_token": access_token,
             "profile_picture": ig_details.get("profile_picture_url", ""),
             "followers_count": ig_details.get("followers_count", 0),
             "token_expires_at": (datetime.utcnow() + timedelta(seconds=token_expires_in)).isoformat(),
@@ -264,6 +232,7 @@ async def oauth_callback(
         logger.info("oauth_success", 
                    client_id=client_id, 
                    instagram_username=ig_details.get("username"),
+                   account_type=ig_details.get("account_type"),
                    business_name=client_config.get("business_name"))
         
         # Redirect to success page
