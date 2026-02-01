@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Bot, ShieldCheck, Users, ArrowRight, Loader2, Sparkles, Command } from 'lucide-react';
+import { Bot, ShieldCheck, Users, ArrowRight, Loader2, Sparkles, Command, CheckCircle, Lock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -9,7 +9,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { UserRole } from '@/lib/types';
 import { cn } from '@/lib/utils';
 
-type Step = 'select' | 'login';
+type Step = 'select' | 'login' | 'success';
 
 export default function Login() {
   const [step, setStep] = useState<Step>('select');
@@ -38,16 +38,28 @@ export default function Login() {
     setError('');
     setIsLoading(true);
 
+    const targetRole = selectedRole; // Capture payload
+    if (!targetRole) {
+      setError('Please select a role');
+      setIsLoading(false);
+      return;
+    }
+
     try {
-      const success = await login(email, password, selectedRole!);
+      const success = await login(email, password, targetRole);
       if (success) {
-        navigate(selectedRole === 'admin' ? '/admin' : '/dashboard');
+        setStep('success'); // Trigger animation
+        
+        // Wait for animation then redirect
+        setTimeout(() => {
+          navigate(targetRole === 'admin' ? '/admin' : '/dashboard', { replace: true });
+        }, 2000);
       } else {
         setError('Invalid credentials');
+        setIsLoading(false); // Only stop loading on failure, keep loading on success to prevent UI flicker
       }
     } catch (err) {
       setError('An error occurred. Please try again.');
-    } finally {
       setIsLoading(false);
     }
   };
@@ -267,6 +279,55 @@ export default function Login() {
                     )}
                   </Button>
                 </form>
+              </div>
+            </motion.div>
+          )}
+          {step === 'success' && (
+            <motion.div
+              key="success"
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 1.05 }}
+              transition={{ duration: 0.4 }}
+              className="w-full max-w-md mx-auto"
+            >
+              <div className="relative rounded-2xl bg-zinc-900/80 border border-white/10 backdrop-blur-2xl p-10 shadow-2xl overflow-hidden ring-1 ring-white/5 flex flex-col items-center justify-center text-center py-20">
+                {/* Accent Glow based on Role */}
+                <div className={`absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-transparent via-${selectedRole === 'admin' ? 'cyan-500' : 'emerald-500'} to-transparent opacity-100 shadow-[0_0_20px_rgba(${selectedRole === 'admin' ? '6,182,212' : '16,185,129'},0.5)]`} />
+
+                <div className="mb-8 relative">
+                  <div className={`active-ring absolute inset-0 rounded-full blur-xl opacity-50 bg-${selectedRole === 'admin' ? 'cyan-500' : 'emerald-500'}`} />
+                  <div className="relative z-10 w-24 h-24 rounded-full bg-zinc-900 border border-white/10 flex items-center justify-center">
+                     {selectedRole === 'admin' ? (
+                        <ShieldCheck className="w-12 h-12 text-cyan-400 animate-pulse" />
+                     ) : (
+                        <CheckCircle className="w-12 h-12 text-emerald-400 animate-pulse" />
+                     )}
+                  </div>
+                </div>
+
+                <h2 className="text-3xl font-bold text-white mb-2 tracking-tight">
+                  Session Granted
+                </h2>
+                <p className="text-white/40 text-sm font-light">
+                  Authenticating secure connection...
+                </p>
+                
+                <div className="mt-8 flex gap-1">
+                  <motion.span 
+                    initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }}
+                    className={`h-1 w-1 rounded-full bg-${selectedRole === 'admin' ? 'cyan-500' : 'emerald-500'}`} 
+                  />
+                  <motion.span 
+                    initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }}
+                    className={`h-1 w-1 rounded-full bg-${selectedRole === 'admin' ? 'cyan-500' : 'emerald-500'}`} 
+                  />
+                  <motion.span 
+                    initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.6 }}
+                    className={`h-1 w-1 rounded-full bg-${selectedRole === 'admin' ? 'cyan-500' : 'emerald-500'}`} 
+                  />
+                </div>
+
               </div>
             </motion.div>
           )}

@@ -27,6 +27,8 @@ export default function ClientEditor() {
     greeting: '',
     qualification: '',
     booking: '',
+    mobileNumber: '',
+    followup: '',
   });
 
   useEffect(() => {
@@ -45,6 +47,8 @@ export default function ClientEditor() {
               greeting: client.aiPrompts?.greeting || '',
               qualification: client.aiPrompts?.qualification || '',
               booking: client.aiPrompts?.booking || '',
+              mobileNumber: client.mobileNumber || '',
+              followup: client.aiPrompts?.followup || '',
             });
           }
         } catch (err) {
@@ -66,10 +70,12 @@ export default function ClientEditor() {
         email: formData.email,
         instagramHandle: formData.instagramHandle,
         agentType: formData.agentType,
+        mobileNumber: formData.mobileNumber,
         aiPrompts: {
           greeting: formData.greeting,
           qualification: formData.qualification,
           booking: formData.booking,
+          followup: formData.followup,
         },
       };
 
@@ -82,8 +88,12 @@ export default function ClientEditor() {
         toast({ title: 'Client Updated', description: 'The client has been successfully updated.' });
       }
       navigate('/admin/clients');
-    } catch (err) {
-      toast({ title: 'Error', description: `Failed to ${isNew ? 'create' : 'update'} client.`, variant: 'destructive' });
+    } catch (err: any) {
+      toast({ 
+        title: 'Error', 
+        description: err.message || `Failed to ${isNew ? 'create' : 'update'} client.`, 
+        variant: 'destructive' 
+      });
     } finally {
       setSaving(false);
     }
@@ -196,11 +206,16 @@ export default function ClientEditor() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-white/60 text-xs uppercase tracking-wider pl-1">Instagram Handle</Label>
+                  <Label className="text-white/60 text-xs uppercase tracking-wider pl-1">
+                    {formData.agentType === 'voice' ? 'Mobile Number' : 'Instagram Handle'}
+                  </Label>
                   <Input
-                    value={formData.instagramHandle}
-                    onChange={(e) => setFormData({ ...formData, instagramHandle: e.target.value })}
-                    placeholder="@wayne_tech"
+                    value={formData.agentType === 'voice' ? formData.mobileNumber : formData.instagramHandle}
+                    onChange={(e) => setFormData({ 
+                      ...formData, 
+                      [formData.agentType === 'voice' ? 'mobileNumber' : 'instagramHandle']: e.target.value 
+                    })}
+                    placeholder={formData.agentType === 'voice' ? "+1 (555) 000-0000" : "@wayne_tech"}
                     className="bg-black/20 border-white/10 text-white placeholder:text-white/20 h-12 rounded-xl focus:border-cyan-500/50 focus:bg-black/40 transition-all font-medium"
                   />
                 </div>
@@ -242,33 +257,51 @@ export default function ClientEditor() {
             </div>
 
             <div className="space-y-6">
+              {formData.agentType === 'text' && (
+                <div className="space-y-2">
+                  <Label className="text-white/60 text-xs uppercase tracking-wider pl-1">Initial Greeting Protocol</Label>
+                  <Textarea
+                    value={formData.greeting}
+                    onChange={(e) => setFormData({ ...formData, greeting: e.target.value })}
+                    placeholder="Define the first point of contact..."
+                    className="bg-black/20 border-white/10 text-white placeholder:text-white/20 min-h-[100px] rounded-xl focus:border-purple-500/50 focus:bg-black/40 transition-all leading-relaxed"
+                  />
+                </div>
+              )}
+
               <div className="space-y-2">
-                <Label className="text-white/60 text-xs uppercase tracking-wider pl-1">Initial Greeting Protocol</Label>
-                <Textarea
-                  value={formData.greeting}
-                  onChange={(e) => setFormData({ ...formData, greeting: e.target.value })}
-                  placeholder="Define the first point of contact..."
-                  className="bg-black/20 border-white/10 text-white placeholder:text-white/20 min-h-[100px] rounded-xl focus:border-purple-500/50 focus:bg-black/40 transition-all leading-relaxed"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-white/60 text-xs uppercase tracking-wider pl-1">Qualification Logic</Label>
+                <Label className="text-white/60 text-xs uppercase tracking-wider pl-1">
+                  {formData.agentType === 'voice' ? 'Main Prompt' : 'Qualification Logic'}
+                </Label>
                 <Textarea
                   value={formData.qualification}
                   onChange={(e) => setFormData({ ...formData, qualification: e.target.value })}
-                  placeholder="Criteria for lead qualification..."
+                  placeholder={formData.agentType === 'voice' ? "Core logic for voice agent..." : "Criteria for lead qualification..."}
                   className="bg-black/20 border-white/10 text-white placeholder:text-white/20 min-h-[100px] rounded-xl focus:border-purple-500/50 focus:bg-black/40 transition-all leading-relaxed"
                 />
               </div>
-              <div className="space-y-2">
-                <Label className="text-white/60 text-xs uppercase tracking-wider pl-1">Booking Conversion Protocol</Label>
-                <Textarea
-                  value={formData.booking}
-                  onChange={(e) => setFormData({ ...formData, booking: e.target.value })}
-                  placeholder="Closing statement/action..."
-                  className="bg-black/20 border-white/10 text-white placeholder:text-white/20 min-h-[100px] rounded-xl focus:border-purple-500/50 focus:bg-black/40 transition-all leading-relaxed"
-                />
-              </div>
+
+              {formData.agentType === 'voice' ? (
+                <div className="space-y-2">
+                  <Label className="text-white/60 text-xs uppercase tracking-wider pl-1">Follow Up Prompt</Label>
+                  <Textarea
+                    value={formData.followup}
+                    onChange={(e) => setFormData({ ...formData, followup: e.target.value })}
+                    placeholder="Logic for follow-up calls..."
+                    className="bg-black/20 border-white/10 text-white placeholder:text-white/20 min-h-[100px] rounded-xl focus:border-purple-500/50 focus:bg-black/40 transition-all leading-relaxed"
+                  />
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <Label className="text-white/60 text-xs uppercase tracking-wider pl-1">Booking Conversion Protocol</Label>
+                  <Textarea
+                    value={formData.booking}
+                    onChange={(e) => setFormData({ ...formData, booking: e.target.value })}
+                    placeholder="Closing statement/action..."
+                    className="bg-black/20 border-white/10 text-white placeholder:text-white/20 min-h-[100px] rounded-xl focus:border-purple-500/50 focus:bg-black/40 transition-all leading-relaxed"
+                  />
+                </div>
+              )}
             </div>
           </motion.div>
         </div>

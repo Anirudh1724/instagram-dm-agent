@@ -38,7 +38,16 @@ async function apiRequest<T>(
 
     if (!response.ok) {
         const error = await response.json().catch(() => ({ detail: 'Request failed' }));
-        throw new Error(error.detail || error.message || 'Request failed');
+        let msg = error.detail || error.message || 'Request failed';
+        
+        if (Array.isArray(msg)) {
+            // Handle Pydantic validation errors
+            msg = msg.map((e: any) => e.msg).join(', ');
+        } else if (typeof msg === 'object') {
+            msg = JSON.stringify(msg);
+        }
+        
+        throw new Error(msg);
     }
 
     return response.json();
@@ -54,6 +63,7 @@ export interface LoginResponse {
     business_name?: string;
     token?: string;
     is_admin?: boolean;
+    agent_type?: 'text' | 'voice';
 }
 
 export async function loginClient(email: string, password: string): Promise<LoginResponse> {
@@ -82,7 +92,7 @@ export async function logout(): Promise<void> {
     localStorage.removeItem('leadai_user');
 }
 
-export async function verifyToken(): Promise<{ valid: boolean; client_id?: string; business_name?: string }> {
+export async function verifyToken(): Promise<{ valid: boolean; client_id?: string; business_name?: string; agent_type?: 'text' | 'voice' }> {
     const token = getAuthToken();
     if (!token) return { valid: false };
 
@@ -152,6 +162,36 @@ export async function getDashboard(period: string = 'daily', type: 'text' | 'voi
         };
     }
 
+    // Mock data for Text Agent Dashboard
+    return {
+        leadsContacted: Math.floor(Math.random() * 100) + 50, // Leads Reached
+        leadsContactedChange: Math.floor(Math.random() * 20) + 5,
+        uniqueLeads: Math.floor(Math.random() * 80) + 20, // Engaged Leads
+        uniqueLeadsChange: Math.floor(Math.random() * 15) + 3,
+        messagesSent: Math.floor(Math.random() * 500) + 100, // Messages Sent
+        messagesSentChange: Math.floor(Math.random() * 50) + 10,
+        responseRate: Math.floor(Math.random() * 20) + 25, // Response Rate
+        responseRateChange: Math.floor(Math.random() * 5) - 1,
+        bookings: Math.floor(Math.random() * 10) + 2, // Bookings
+        bookingsChange: Math.floor(Math.random() * 3) + 1,
+        chartData: [
+            { name: 'Mon', leads: 45, messages: 120, conversions: 3 },
+            { name: 'Tue', leads: 52, messages: 135, conversions: 4 },
+            { name: 'Wed', leads: 48, messages: 110, conversions: 2 },
+            { name: 'Thu', leads: 61, messages: 150, conversions: 5 },
+            { name: 'Fri', leads: 55, messages: 140, conversions: 4 },
+            { name: 'Sat', leads: 38, messages: 90, conversions: 2 },
+            { name: 'Sun', leads: 42, messages: 95, conversions: 3 },
+        ],
+        funnelData: [
+            { name: 'Total Leads', value: 100, fill: '#10b981' }, // Emerald for Text
+            { name: 'Contacted', value: 80, fill: '#34d399' },
+            { name: 'Responded', value: 45, fill: '#6ee7b7' },
+            { name: 'Qualified', value: 20, fill: '#a7f3d0' },
+        ],
+    };
+
+    /*
     const response = await apiRequest<any>(`/api/client/dashboard?period=${period}&token=${token}`);
 
     // Map backend response to frontend format
@@ -169,6 +209,7 @@ export async function getDashboard(period: string = 'daily', type: 'text' | 'voi
         chartData: response.chart_data || [],
         funnelData: response.funnel_data || [],
     };
+    */
 }
 
 export interface Activity {
@@ -198,8 +239,24 @@ export async function getActivity(limit: number = 10, type: 'text' | 'voice' = '
         });
     }
 
+    // Mock data for Text Agent Activity
+    const statuses = ['new', 'engaged', 'qualified', 'booked'];
+    return Array.from({ length: limit }).map((_, i) => {
+        const status = statuses[Math.floor(Math.random() * statuses.length)];
+        return {
+            id: `text-${i}`,
+            customer_name: `User ${Math.floor(Math.random() * 1000)}`,
+            customer_username: `@user_${Math.floor(Math.random() * 1000)}`,
+            last_message: status === 'booked' ? 'Meeting confirmed for tomorrow' : 'Interested in learning more about pricing',
+            last_message_time: `${Math.floor(Math.random() * 10) + 1}m ago`,
+            status: status,
+        };
+    });
+
+    /*
     const response = await apiRequest<{ conversations: Activity[] }>(`/api/client/activity?limit=${limit}&token=${token}`);
     return response.conversations || [];
+    */
 }
 
 // ============================================
@@ -224,79 +281,76 @@ export interface Lead {
 export async function getLeads(
     options: { limit?: number; offset?: number; search?: string; status?: string } = {}
 ): Promise<{ leads: Lead[]; total: number }> {
-    const clientId = getClientId();
-    const token = getAuthToken();
-    const params = new URLSearchParams();
-    if (options.limit) params.append('limit', options.limit.toString());
-    if (options.offset) params.append('offset', options.offset.toString());
-    if (options.search) params.append('search', options.search);
-    if (options.status) params.append('status', options.status);
+    // Mock data based on options
+    const mockLeads: Lead[] = Array.from({ length: 50 }).map((_, i) => {
+        const statuses: Lead['status'][] = ['new', 'engaged', 'qualified', 'booked', 'converted'];
+        const status = statuses[Math.floor(Math.random() * statuses.length)];
+        return {
+            id: `lead-${i}`,
+            name: `Mock Lead ${i + 1}`,
+            username: `mock_user_${i + 1}`,
+            avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=mock_${i}`,
+            status: status,
+            lastMessage: i % 2 === 0 ? 'Thanks for the info!' : 'Can we schedule a call?',
+            lastMessageTime: i < 5 ? 'Just now' : `${Math.floor(Math.random() * 24)} hours ago`,
+            responseTime: Math.floor(Math.random() * 120),
+            conversationCount: Math.floor(Math.random() * 20),
+            isFollowup: Math.random() > 0.8,
+            showsBookingIntent: Math.random() > 0.9,
+            tags: Math.random() > 0.7 ? ['VIP', 'Hot Lead'] : [],
+        };
+    });
 
-    const response = await apiRequest<any>(`/api/clients/${clientId}/leads?${params}&token=${token}`);
+    let filtered = mockLeads;
+    if (options.status && options.status !== 'all') {
+        filtered = filtered.filter(l => l.status === options.status);
+    }
+    if (options.search) {
+        const lowerSearch = options.search.toLowerCase();
+        filtered = filtered.filter(l => l.name.toLowerCase().includes(lowerSearch) || l.username.toLowerCase().includes(lowerSearch));
+    }
 
-    // Map backend response to frontend format
-    const leads: Lead[] = (response.leads || []).map((lead: any) => ({
-        id: lead.customer_id || lead.id,
-        name: lead.customer_name || lead.name || 'Unknown',
-        username: lead.customer_username || lead.username || '',
-        avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${lead.customer_name || lead.name || 'user'}`,
-        status: mapStatus(lead.stage || lead.status),
-        lastMessage: lead.last_message || '',
-        lastMessageTime: formatTime(lead.last_message_time),
-        responseTime: lead.avg_response_time,
-        conversationCount: lead.message_count || 0,
-        isFollowup: lead.is_followup || false,
-        showsBookingIntent: lead.shows_booking_intent || false,
-        tags: lead.tags || [],
-    }));
-
-    return { leads, total: response.total || leads.length };
+    return { leads: filtered, total: filtered.length };
 }
 
 export async function getFollowupLeads(limit: number = 50): Promise<{ leads: Lead[]; total: number }> {
-    const clientId = getClientId();
-    const token = getAuthToken();
-    const response = await apiRequest<any>(`/api/clients/${clientId}/leads/followup?limit=${limit}&token=${token}`);
-
-    const leads: Lead[] = (response.leads || []).map((lead: any) => ({
-        id: lead.customer_id || lead.id,
-        name: lead.customer_name || lead.name || 'Unknown',
-        username: lead.customer_username || lead.username || '',
-        avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${lead.customer_name || lead.name || 'user'}`,
-        status: mapStatus(lead.stage || lead.status),
-        lastMessage: lead.last_message || '',
-        lastMessageTime: formatTime(lead.last_message_time),
-        responseTime: lead.avg_response_time,
-        conversationCount: lead.message_count || 0,
+    // Mock data for Follow-up Leads
+    const leads: Lead[] = Array.from({ length: 12 }).map((_, i) => ({
+        id: `followup-${i}`,
+        name: `Lead ${i + 1}`,
+        username: `lead_${i + 1}`,
+        avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=followup_${i}`,
+        status: i % 3 === 0 ? 'engaged' : 'qualified',
+        lastMessage: i % 2 === 0 ? 'Sent proposal, waiting for response.' : 'Asked for more details about pricing.',
+        lastMessageTime: `${i + 2}h ago`,
+        responseTime: Math.floor(Math.random() * 60) + 10,
+        conversationCount: Math.floor(Math.random() * 10) + 2,
         isFollowup: true,
-        showsBookingIntent: lead.shows_booking_intent || false,
-        tags: lead.tags || ['Needs Follow Up'],
+        showsBookingIntent: false,
+        tags: ['Needs Follow Up', i % 2 === 0 ? 'High Priority' : 'Warm Lead'],
     }));
 
-    return { leads, total: response.total || leads.length };
+    return { leads, total: leads.length };
 }
 
 export async function getBookingLeads(limit: number = 50): Promise<{ leads: Lead[]; total: number }> {
-    const clientId = getClientId();
-    const token = getAuthToken();
-    const response = await apiRequest<any>(`/api/clients/${clientId}/leads/booking?limit=${limit}&token=${token}`);
-
-    const leads: Lead[] = (response.leads || []).map((lead: any) => ({
-        id: lead.customer_id || lead.id,
-        name: lead.customer_name || lead.name || 'Unknown',
-        username: lead.customer_username || lead.username || '',
-        avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${lead.customer_name || lead.name || 'user'}`,
-        status: mapStatus(lead.stage || lead.status),
-        lastMessage: lead.last_message || '',
-        lastMessageTime: formatTime(lead.last_message_time),
-        responseTime: lead.avg_response_time,
-        conversationCount: lead.message_count || 0,
+    // Mock data for Booking Leads
+    const leads: Lead[] = Array.from({ length: 8 }).map((_, i) => ({
+        id: `booking-${i}`,
+        name: `Booking Prospect ${i + 1}`,
+        username: `prospect_${i + 1}`,
+        avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=booking_${i}`,
+        status: 'booked',
+        lastMessage: 'Confirmed meeting time for tomorrow at 2 PM.',
+        lastMessageTime: `${i * 15 + 5}m ago`,
+        responseTime: Math.floor(Math.random() * 30) + 5,
+        conversationCount: Math.floor(Math.random() * 15) + 5,
         isFollowup: false,
         showsBookingIntent: true,
-        tags: lead.tags || ['Booking Intent'],
+        tags: ['Booking Intent', 'Scheduled'],
     }));
 
-    return { leads, total: response.total || leads.length };
+    return { leads, total: leads.length };
 }
 
 export interface Message {
@@ -333,10 +387,14 @@ export interface Client {
     conversionRate: number;
     createdAt: string;
     agentType: 'text' | 'voice';
+    mobileNumber?: string;
+    status: 'active' | 'inactive';
+    password?: string;
     aiPrompts?: {
         greeting: string;
         qualification: string;
         booking: string;
+        followup?: string;
     };
 }
 
@@ -357,10 +415,14 @@ export async function getClients(): Promise<Client[]> {
         conversionRate: client.conversion_rate || 0,
         createdAt: client.created_at || new Date().toISOString().split('T')[0],
         agentType: client.agent_type || 'text',
+        mobileNumber: client.mobile_number || '',
+        status: client.status || 'active',
+        password: client.login_password || '',
         aiPrompts: {
             greeting: client.first_message || '',
             qualification: client.qualification_prompt || '',
             booking: client.dm_prompt || '',
+            followup: client.followup_prompt || '',
         },
     }));
 }
@@ -383,10 +445,14 @@ export async function getClient(clientId: string): Promise<Client | null> {
             conversionRate: response.conversion_rate || 0,
             createdAt: response.created_at || '',
             agentType: response.agent_type || 'text',
+            mobileNumber: response.mobile_number || '',
+            status: response.status || 'active',
+            password: response.login_password || '',
             aiPrompts: {
                 greeting: response.first_message || '',
                 qualification: response.qualification_prompt || '',
                 booking: response.dm_prompt || '',
+                followup: response.followup_prompt || '',
             },
         };
     } catch {
@@ -401,9 +467,13 @@ export async function createClient(data: Partial<Client> & { password?: string }
         login_email: data.email,
         login_password: data.password,
         agent_type: data.agentType || 'text',
+        mobile_number: data.mobileNumber || '',
+        instagram_handle: data.instagramHandle || '',
+        status: data.status || 'active',
         first_message: data.aiPrompts?.greeting || '',
         qualification_prompt: data.aiPrompts?.qualification || '',
         dm_prompt: data.aiPrompts?.booking || '',
+        followup_prompt: data.aiPrompts?.followup || '',
     };
 
     return apiRequest('/admin/clients', {
@@ -421,9 +491,13 @@ export async function updateClient(clientId: string, data: Partial<Client>): Pro
         business_name: data.businessName,
         login_email: data.email,
         agent_type: data.agentType,
+        mobile_number: data.mobileNumber || '',
+        instagram_handle: data.instagramHandle || '',
+        status: data.status,
         first_message: data.aiPrompts?.greeting || '',
         qualification_prompt: data.aiPrompts?.qualification || '',
         dm_prompt: data.aiPrompts?.booking || '',
+        followup_prompt: data.aiPrompts?.followup || '',
     };
 
     return apiRequest(`/admin/clients/${clientId}`, {

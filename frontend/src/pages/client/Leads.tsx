@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Search, Filter, X, MessageSquare, Send, Loader2, Calendar, ChevronDown } from 'lucide-react';
+import { DateRangeFilter } from '@/components/common/DateRangeFilter';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { LeadCard } from '@/components/dashboard/LeadCard';
@@ -137,6 +138,7 @@ export default function Leads() {
 
           {/* Filters */}
           <div className="flex gap-2 overflow-x-auto pb-2 md:pb-0 no-scrollbar">
+            <DateRangeFilter />
             {statusFilters.map((filter) => (
               <button
                 key={filter.value}

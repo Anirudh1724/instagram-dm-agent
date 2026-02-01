@@ -15,6 +15,7 @@ import Settings from "./pages/client/Settings";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import Clients from "./pages/admin/Clients";
 import ClientEditor from "./pages/admin/ClientEditor";
+import UpgradePlan from "./pages/UpgradePlan";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -36,6 +37,7 @@ const App = () => (
               <Route path="/followup" element={<FollowupLeads />} />
               <Route path="/bookings" element={<BookingLeads />} />
               <Route path="/settings" element={<Settings />} />
+              <Route path="/upgrade" element={<UpgradePlan />} />
 
               {/* Admin Routes */}
               <Route path="/admin" element={<AdminDashboard />} />

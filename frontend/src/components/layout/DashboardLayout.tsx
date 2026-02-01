@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Outlet, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { DashboardSidebar } from './DashboardSidebar';
@@ -14,6 +14,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { motion, AnimatePresence } from 'framer-motion';
+import { LogOut, ShieldAlert, Lock, Loader2 } from 'lucide-react';
 
 export function DashboardLayout() {
   const { isAuthenticated, user, logout } = useAuth();
@@ -32,6 +34,7 @@ export function DashboardLayout() {
 
 function DashboardContent({ isAdmin, logout }: { isAdmin: boolean; logout: () => void }) {
   const { isLogoutConfirmOpen, setIsLogoutConfirmOpen } = useDashboard();
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -62,13 +65,17 @@ function DashboardContent({ isAdmin, logout }: { isAdmin: boolean; logout: () =>
   }, [setIsLogoutConfirmOpen]);
 
   const confirmLogout = () => {
-    logout();
     setIsLogoutConfirmOpen(false);
-    navigate('/', { replace: true });
+    setIsLoggingOut(true);
+
+    setTimeout(() => {
+      logout();
+      navigate('/', { replace: true });
+    }, 2000);
   };
 
   return (
-    <div className="flex min-h-screen w-full bg-zinc-950 relative overflow-hidden">
+    <div className="flex h-screen w-full bg-zinc-950 relative overflow-hidden">
       {/* Global Cinematic Background (Fixed) */}
       <div className="fixed inset-0 bg-black pointer-events-none z-0" />
 
@@ -125,6 +132,62 @@ function DashboardContent({ isAdmin, logout }: { isAdmin: boolean; logout: () =>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+
+      {/* Logout Animation Overlay */}
+      <AnimatePresence>
+        {isLoggingOut && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-3xl"
+          >
+            <div className="flex flex-col items-center gap-8">
+              <motion.div
+                initial={{ scale: 0.8, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ duration: 0.5 }}
+                className="relative"
+              >
+                <div className={cn(
+                  "w-24 h-24 rounded-full border-2 flex items-center justify-center relative z-10",
+                  isAdmin ? "border-cyan-500/20 bg-cyan-950/30" : "border-emerald-500/20 bg-emerald-950/30"
+                )}>
+                  {isAdmin ? (
+                    <ShieldAlert className="w-10 h-10 text-cyan-400 animate-pulse" />
+                  ) : (
+                    <Lock className="w-10 h-10 text-emerald-400 animate-pulse" />
+                  )}
+                </div>
+                {/* Rings */}
+                <motion.div 
+                  className={cn("absolute inset-0 rounded-full border opacity-50", isAdmin ? "border-cyan-500" : "border-emerald-500")}
+                  initial={{ scale: 1 }}
+                  animate={{ scale: 1.5, opacity: 0 }}
+                  transition={{ duration: 1.5, repeat: Infinity }}
+                />
+                <motion.div 
+                   className={cn("absolute inset-0 rounded-full border opacity-50", isAdmin ? "border-cyan-500" : "border-emerald-500")}
+                  initial={{ scale: 1 }}
+                  animate={{ scale: 1.5, opacity: 0 }}
+                  transition={{ duration: 1.5, repeat: Infinity, delay: 0.5 }}
+                />
+              </motion.div>
+
+              <div className="text-center space-y-2">
+                <h3 className="text-2xl font-bold text-white mb-1">
+                  {isAdmin ? 'Terminating Session' : 'Logging Out'}
+                </h3>
+                <p className="text-white/40 text-sm font-medium flex items-center justify-center gap-2">
+                  <Loader2 className="w-3 h-3 animate-spin" />
+                  {isAdmin ? 'Clearing secure credentials...' : 'Saving preferences...'}
+                </p>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

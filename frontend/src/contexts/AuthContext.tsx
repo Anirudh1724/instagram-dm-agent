@@ -36,6 +36,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           localStorage.removeItem('leadai_user');
           localStorage.removeItem('leadai_client_id');
           setUser(null);
+        } else {
+          // Token valid, update user data if needed (e.g. agentType might have changed)
+          setUser(prev => prev ? { 
+            ...prev, 
+            id: result.client_id || prev.id,
+            name: result.business_name || prev.name,
+            agentType: result.agent_type || prev.agentType || 'text' 
+          } : null);
         }
       } catch {
         // Token verification failed, keep existing user state
@@ -79,6 +87,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             name: response.business_name || 'Client',
             role: 'client',
             avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${email}`,
+            agentType: response.agent_type || 'text',
           };
 
           localStorage.setItem('leadai_token', response.token);

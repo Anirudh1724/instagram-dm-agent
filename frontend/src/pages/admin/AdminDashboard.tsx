@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Building2, Users, TrendingUp, Activity, CheckCircle, XCircle, Loader2, Plus, ShieldCheck } from 'lucide-react';
+import { Building2, Users, TrendingUp, Activity, CheckCircle, XCircle, Loader2, Plus, ShieldCheck, Phone, MessageSquare, Check, X, MoreVertical, Eye, EyeOff } from 'lucide-react';
 import { StatCard } from '@/components/ui/stat-card';
 import {
   Table,
@@ -11,7 +11,9 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { getClients, Client } from '@/lib/api';
+import { getClients, updateClient, deleteClient, Client } from '@/lib/api';
+import { Badge } from '@/components/ui/badge';
+import { useToast } from '@/hooks/use-toast';
 import { useDashboard } from '@/contexts/DashboardContext';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
@@ -41,8 +43,12 @@ export default function AdminDashboard() {
   const { user } = useAuth();
   const { isLogoutConfirmOpen, setIsLogoutConfirmOpen } = useDashboard();
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
+  const [visiblePasswords, setVisiblePasswords] = useState<Record<string, boolean>>({});
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
 
   useEffect(() => {
     const fetchClients = async () => {
@@ -60,6 +66,44 @@ export default function AdminDashboard() {
 
     fetchClients();
   }, []);
+
+  const handleStatusChange = async (clientId: string, newStatus: 'active' | 'inactive') => {
+    try {
+      await updateClient(clientId, { status: newStatus });
+      toast({ title: 'Status Updated', description: `Client status changed to ${newStatus}.` });
+      // update local state
+      setClients(clients.map(c => c.id === clientId ? { ...c, status: newStatus } : c));
+    } catch (err) {
+      toast({ title: 'Error', description: 'Failed to update status.', variant: 'destructive' });
+    }
+  };
+
+  const handleDelete = (clientId: string) => {
+    setDeleteId(clientId);
+    setIsDeleteConfirmOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteId) return;
+
+    try {
+      await deleteClient(deleteId);
+      toast({ title: 'Client Deleted', description: 'The client has been successfully deleted.' });
+      setClients(clients.filter(c => c.id !== deleteId));
+    } catch (err) {
+      toast({ title: 'Error', description: 'Failed to delete client.', variant: 'destructive' });
+    } finally {
+      setIsDeleteConfirmOpen(false);
+      setDeleteId(null);
+    }
+  };
+
+  const togglePasswordVisibility = (clientId: string) => {
+    setVisiblePasswords(prev => ({
+      ...prev,
+      [clientId]: !prev[clientId]
+    }));
+  };
 
   const totalLeads = clients.reduce((sum, c) => sum + c.leadsCount, 0);
   const avgConversion = clients.length > 0
@@ -195,11 +239,12 @@ export default function AdminDashboard() {
           <Table>
             <TableHeader>
               <TableRow className="border-white/5 hover:bg-white/5">
-                <TableHead className="text-xs font-bold text-cyan-200/40 uppercase tracking-widest py-5 pl-8">Business Entity</TableHead>
-                <TableHead className="text-xs font-bold text-cyan-200/40 uppercase tracking-widest py-5">Instagram</TableHead>
+                <TableHead className="text-xs font-bold text-cyan-200/40 uppercase tracking-widest py-5 pl-8">Business Name</TableHead>
+                <TableHead className="text-xs font-bold text-cyan-200/40 uppercase tracking-widest py-5">Type</TableHead>
+                <TableHead className="text-xs font-bold text-cyan-200/40 uppercase tracking-widest py-5">Username</TableHead>
+                <TableHead className="text-xs font-bold text-cyan-200/40 uppercase tracking-widest py-5">Mobile Number</TableHead>
+                <TableHead className="text-xs font-bold text-cyan-200/40 uppercase tracking-widest py-5">Password</TableHead>
                 <TableHead className="text-xs font-bold text-cyan-200/40 uppercase tracking-widest py-5">Status</TableHead>
-                <TableHead className="text-xs font-bold text-cyan-200/40 uppercase tracking-widest py-5">Metrics</TableHead>
-                <TableHead className="text-xs font-bold text-cyan-200/40 uppercase tracking-widest py-5">Performance</TableHead>
                 <TableHead className="text-xs font-bold text-cyan-200/40 uppercase tracking-widest py-5 text-right pr-8">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -225,51 +270,94 @@ export default function AdminDashboard() {
                       </div>
                     </TableCell>
                     <TableCell>
-                      <span className="inline-flex items-center px-2.5 py-1 rounded-md bg-white/5 border border-white/5 text-xs text-white/70 font-medium">
-                        @{client.instagramHandle}
+                      <Badge 
+                        variant="secondary" 
+                        className={cn(
+                          "text-[10px] px-1.5 py-0 h-5 border-0",
+                          client.agentType === 'voice' 
+                            ? "bg-blue-500/10 text-blue-400" 
+                            : "bg-emerald-500/10 text-emerald-400"
+                        )}
+                      >
+                        {client.agentType === 'voice' ? <Phone className="w-3 h-3 mr-1" /> : <MessageSquare className="w-3 h-3 mr-1" />}
+                        {client.agentType === 'voice' ? 'Voice' : 'Text'}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                       <span className="inline-flex items-center px-2.5 py-1 rounded-md bg-white/5 border border-white/5 text-xs text-white/70 font-medium">
+                        @{client.instagramHandle.replace('@', '')}
                       </span>
                     </TableCell>
                     <TableCell>
-                      {client.isConnected ? (
-                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[10px] font-bold text-emerald-400 uppercase tracking-wider shadow-[0_0_10px_rgba(16,185,129,0.1)]">
-                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                          Online
-                        </div>
-                      ) : (
-                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-rose-500/10 border border-rose-500/20 text-[10px] font-bold text-rose-400 uppercase tracking-wider">
-                          <span className="w-1.5 h-1.5 rounded-full bg-rose-400" />
-                          Offline
-                        </div>
-                      )}
+                      <span className="text-xs text-white/70 font-medium">
+                        {client.mobileNumber || <span className="text-white/30 italic">Not available</span>}
+                      </span>
                     </TableCell>
                     <TableCell>
-                      <div className="flex flex-col gap-1">
-                        <span className="text-sm font-bold text-white">{client.leadsCount}</span>
-                        <span className="text-[10px] text-white/30 uppercase">Total Leads</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-white/70 font-medium font-mono min-w-[80px]">
+                          {visiblePasswords[client.id] ? (client.password || '••••••••') : '••••••••'}
+                        </span>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="w-6 h-6 hover:bg-white/10 text-white/40 hover:text-white"
+                          onClick={() => togglePasswordVisibility(client.id)}
+                        >
+                          {visiblePasswords[client.id] ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
+                        </Button>
                       </div>
                     </TableCell>
                     <TableCell>
-                      <div className="w-32">
-                        <div className="flex justify-between mb-1">
-                          <span className="text-[10px] font-bold text-white/50">{client.conversionRate}%</span>
-                        </div>
-                        <div className="h-1.5 w-full rounded-full bg-white/10 overflow-hidden">
-                          <div
-                            className={cn("h-full rounded-full transition-all duration-1000", client.conversionRate > 20 ? 'bg-cyan-400' : 'bg-amber-400')}
-                            style={{ width: `${Math.min(client.conversionRate, 100)}%` }}
-                          />
-                        </div>
-                      </div>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="sm" className="h-8 px-2 gap-2 hover:bg-white/10">
+                            <div className={cn(
+                              "w-2 h-2 rounded-full shadow-[0_0_8px]",
+                              client.status === 'active' 
+                                ? "bg-emerald-500 shadow-emerald-500/50" 
+                                : "bg-gray-500 shadow-gray-500/50"
+                            )} />
+                            <span className={cn(
+                              "capitalize text-xs font-medium",
+                              client.status === 'active' ? "text-emerald-400" : "text-gray-400"
+                            )}>
+                              {client.status || 'Active'}
+                            </span>
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="start" className="w-[140px] bg-zinc-900 border-white/10 text-white">
+                          <DropdownMenuLabel className="text-xs text-muted-foreground">Set Status</DropdownMenuLabel>
+                          <DropdownMenuItem onClick={() => handleStatusChange(client.id, 'active')} className="gap-2 focus:bg-emerald-500/20">
+                            <div className="w-2 h-2 rounded-full bg-emerald-500" />
+                            Active
+                            {client.status === 'active' && <Check className="w-3 h-3 ml-auto opacity-50" />}
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleStatusChange(client.id, 'inactive')} className="gap-2 focus:bg-gray-500/20">
+                            <div className="w-2 h-2 rounded-full bg-gray-500" />
+                            Inactive
+                            {client.status === 'inactive' && <Check className="w-3 h-3 ml-auto opacity-50" />}
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </TableCell>
                     <TableCell className="text-right pr-8">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => navigate(`/admin/clients/${client.id}`)}
-                        className="text-xs font-bold text-cyan-400 hover:text-cyan-300 hover:bg-cyan-500/10"
-                      >
-                        MANAGE
-                      </Button>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-white/10 opacity-70 hover:opacity-100 transition-opacity">
+                            <MoreVertical className="w-4 h-4 text-white/60" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="bg-zinc-900 border-white/10 text-white">
+                          <DropdownMenuItem onClick={() => navigate(`/admin/clients/${client.id}`)}>
+                            Edit Configuration
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator className="bg-white/10" />
+                          <DropdownMenuItem className="text-red-400 focus:text-red-300 focus:bg-red-500/10" onClick={() => handleDelete(client.id)}>
+                            Delete Entity
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </TableCell>
                   </motion.tr>
                 ))
@@ -292,6 +380,32 @@ export default function AdminDashboard() {
           </Table>
         </div>
       </motion.div>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={isDeleteConfirmOpen} onOpenChange={setIsDeleteConfirmOpen}>
+        <AlertDialogContent className="bg-zinc-900 border-white/10 text-white border ring-1 ring-white/5 shadow-2xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-xl font-bold tracking-tight text-red-400 flex items-center gap-2">
+              <X className="w-5 h-5" />
+              Delete Entity?
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-white/60">
+              This action cannot be undone. This will permanently remove the client and all associated data from the registry.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="gap-2">
+            <AlertDialogCancel className="bg-white/5 border-white/10 text-white hover:bg-white/10 rounded-xl">
+              CANCEL
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDelete}
+              className="bg-red-600 hover:bg-red-500 shadow-lg shadow-red-900/20 rounded-xl font-bold tracking-wide"
+            >
+              DELETE
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

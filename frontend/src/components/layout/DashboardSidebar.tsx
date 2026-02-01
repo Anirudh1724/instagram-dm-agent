@@ -13,7 +13,8 @@ import {
   RefreshCcw,
   ShieldCheck,
   Zap,
-  Phone
+  Phone,
+  LogOut
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
@@ -40,7 +41,7 @@ export function DashboardSidebar() {
   const location = useLocation();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { mode, setMode } = useDashboard();
+  const { mode, setMode, setIsLogoutConfirmOpen } = useDashboard();
 
   const isAdmin = user?.role === 'admin';
   const navItems = isAdmin ? adminNavItems : clientNavItems;
@@ -48,7 +49,7 @@ export function DashboardSidebar() {
 
   return (
     <aside
-      className="w-[280px] min-h-screen relative z-50 ml-4 my-4 rounded-2xl overflow-hidden backdrop-blur-xl bg-zinc-900/60 border border-white/5 shadow-2xl flex flex-col"
+      className="w-[280px] h-[calc(100vh-2rem)] relative z-50 ml-4 my-4 rounded-2xl overflow-hidden backdrop-blur-xl bg-zinc-900/60 border border-white/5 shadow-2xl flex flex-col"
     >
       {/* Gradient Glow */}
       <div className={cn("absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-50")} />
@@ -93,7 +94,13 @@ export function DashboardSidebar() {
             </button>
 
             <button
-              onClick={() => setMode('voice')}
+              onClick={() => {
+                if (user?.agentType === 'text') {
+                    navigate('/upgrade');
+                    return;
+                }
+                setMode('voice');
+              }}
               className={cn(
                 "relative flex flex-col items-center justify-center gap-1 py-3 rounded-lg transition-all duration-300 overflow-hidden",
                 mode === 'voice' ? "text-blue-400" : "text-white/40 hover:text-white hover:bg-white/5"
@@ -122,22 +129,22 @@ export function DashboardSidebar() {
               className={cn(
                 'w-full justify-start gap-3 h-14 px-5 font-medium transition-all duration-300 relative overflow-hidden group',
                 isActive
-                  ? 'bg-white/5 text-white shadow-lg'
+                  ? 'bg-white text-black shadow-lg'
                   : 'text-white/40 hover:text-white hover:bg-white/5'
               )}
               onClick={() => navigate(item.path)}
             >
-              {/* Active Indicator Line */}
+              {/* Active Indicator Line - Changed to match text color or accent? Maybe keep it white or remove? If button is white, indicator might need to be dark or removed. Let's make it black for contrast. */}
               {isActive && (
-                <div className={cn("absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 rounded-r-full shadow-[0_0_10px_currentColor]", isAdmin ? 'bg-cyan-500' : 'bg-emerald-500')} />
+                <div className={cn("absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 rounded-r-full shadow-[0_0_10px_currentColor] bg-black")} />
               )}
 
-              <item.icon className={cn('w-5 h-5 transition-colors', isActive ? (isAdmin ? 'text-cyan-400' : 'text-emerald-400') : 'group-hover:text-white')} />
+              <item.icon className={cn('w-5 h-5 transition-colors', isActive ? 'text-black' : 'group-hover:text-white')} />
               <span className="tracking-wide text-sm">{item.label}</span>
 
               {isActive && (
                 <div
-                  className={cn("absolute inset-0 opacity-10", isAdmin ? 'bg-cyan-500' : 'bg-emerald-500')}
+                  className={cn("absolute inset-0 opacity-10 bg-black")}
                 />
               )}
             </Button>
@@ -146,8 +153,18 @@ export function DashboardSidebar() {
       </nav>
 
       {/* Footer */}
-      <div className="p-8 mt-auto text-center">
-        <p className="text-[10px] text-white/10 font-mono">v2.4.0 (Stable)</p>
+      <div className="p-4 mt-auto">
+        <Button
+          variant="outline"
+          className="w-full justify-start gap-3 h-12 px-5 font-medium border-red-500/20 bg-red-500/5 text-red-400 hover:bg-red-500/10 hover:text-red-300 hover:border-red-500/30 transition-all group mb-4 shadow-lg shadow-red-900/10"
+          onClick={() => setIsLogoutConfirmOpen(true)}
+        >
+          <LogOut className="w-5 h-5 group-hover:scale-110 transition-transform" />
+          <span className="tracking-wide text-sm">Terminate Session</span>
+        </Button>
+        <div className="text-center pb-4">
+          <p className="text-[10px] text-white/10 font-mono">v2.4.0 (Stable)</p>
+        </div>
       </div>
     </aside>
   );

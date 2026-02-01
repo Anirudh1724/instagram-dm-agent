@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { RefreshCcw, Clock, AlertTriangle, Loader2, ArrowRight } from 'lucide-react';
+import { DateRangeFilter } from '@/components/common/DateRangeFilter';
 import { LeadCard } from '@/components/dashboard/LeadCard';
 import { getFollowupLeads, Lead } from '@/lib/api';
 import { Button } from '@/components/ui/button';
@@ -49,8 +50,10 @@ export default function FollowupLeads() {
             Re-engage with <span className="text-amber-400 font-bold">{leads.length}</span> stalled conversations
           </p>
         </div>
-        <Button
-          variant="outline"
+        <div className="flex flex-col sm:flex-row gap-3">
+          <DateRangeFilter />
+          <Button
+            variant="outline"
           className="bg-transparent border-amber-500/20 text-amber-400 hover:bg-amber-500/10 hover:text-amber-300 gap-2 h-10 px-4 rounded-xl"
           onClick={() => fetchLeads(true)}
           disabled={refreshing}
@@ -58,6 +61,7 @@ export default function FollowupLeads() {
           <RefreshCcw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
           Refresh List
         </Button>
+        </div>
       </motion.div>
 
       {/* Alert Banner (Dark Glass) */}

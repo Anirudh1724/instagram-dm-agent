@@ -99,6 +99,11 @@ class ClientCreateRequest(BaseModel):
     login_email: str = ""
     login_password: str = ""
     
+    # Agent configuration
+    agent_type: str
+    mobile_number: str = ""
+    instagram_handle: str = ""
+    
     # Business info
     business_name: str = ""
     industry: str = "general"
@@ -176,6 +181,9 @@ async def list_clients(_: bool = Depends(verify_admin_key)):
     
     try:
         clients = store.list_clients()
+        with open("debug_agent_type.log", "a") as f:
+             f.write(f"LIST: {json.dumps(clients, default=str)}\n")
+        logger.info("list_clients_raw", count=len(clients), sample=clients[0] if clients else None)
         
         # Return summary info only (no tokens)
         return {
@@ -185,6 +193,12 @@ async def list_clients(_: bool = Depends(verify_admin_key)):
                     "client_id": c.get("client_id"),
                     "business_name": c.get("business_name", ""),
                     "industry": c.get("industry", ""),
+                    "login_email": c.get("login_email", ""),
+                    "agent_type": c.get("agent_type", "text"),
+                    "mobile_number": c.get("mobile_number", ""),
+                    "instagram_handle": c.get("instagram_handle", ""),
+                    "status": c.get("status", "active"),
+                    "login_password": c.get("login_password", ""),
                     "has_token": bool(c.get("meta_access_token")),
                 }
                 for c in clients
@@ -263,6 +277,7 @@ async def create_client(
     _: bool = Depends(verify_admin_key),
 ):
     """Create a new client configuration."""
+    logger.info("create_client_request", agent_type=request.agent_type, client_id=request.client_id)
     store = get_redis_store()
     
     # Check if already exists
@@ -271,6 +286,9 @@ async def create_client(
     
     # Convert to dict for storage
     config = request.model_dump()
+    with open("debug_agent_type.log", "a") as f:
+        f.write(f"CREATE: {json.dumps(config)}\n")
+    logger.info("create_client_config_dump", config=config)
     
     # NOTE: We don't auto-fetch the Instagram Graph API ID here because
     # the /me endpoint often returns a different ID than what webhooks send.
@@ -324,6 +342,7 @@ async def update_client(
     _: bool = Depends(verify_admin_key),
 ):
     """Update an existing client configuration."""
+    logger.info("update_client_request", agent_type=request.agent_type, client_id=client_id)
     store = get_redis_store()
     
     # Check if exists

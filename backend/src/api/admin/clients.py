@@ -44,6 +44,8 @@ class ClientCreateRequest(BaseModel):
     login_email: str = ""
     login_password: str = ""
     business_name: str = ""
+    mobile_number: str = ""  # Added for Voice Agent
+    status: str = "active"  # active, inactive
     industry: str = "general"
     tagline: str = ""
     greeting_style: str = "Hello! 👋"
@@ -155,6 +157,12 @@ async def list_clients(_: bool = Depends(verify_admin_key)):
                 "business_name": full_data.get("business_name", ""),
                 "industry": full_data.get("industry", ""),
                 "has_token": bool(full_data.get("meta_access_token")),
+                "status": full_data.get("status", "active"),
+                "agent_type": full_data.get("agent_type", "text"),
+                "mobile_number": full_data.get("mobile_number", ""),
+                "instagram_handle": full_data.get("instagram_handle", ""),
+                "login_email": full_data.get("login_email", ""),
+                "login_password": full_data.get("login_password", ""),
             })
     
     return {"count": len(client_list), "clients": client_list}
