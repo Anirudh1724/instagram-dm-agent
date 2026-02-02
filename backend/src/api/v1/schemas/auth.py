@@ -19,6 +19,7 @@ class LoginResponse(BaseModel):
     business_name: str
     token: str
     agent_type: str = "text"
+    voice_direction: str = "inbound"
 
 
 class AdminLoginResponse(BaseModel):
@@ -34,6 +35,7 @@ class TokenVerifyResponse(BaseModel):
     client_id: Optional[str] = None
     business_name: Optional[str] = None
     agent_type: str = "text"
+    voice_direction: str = "inbound"
 
 
 class LogoutResponse(BaseModel):

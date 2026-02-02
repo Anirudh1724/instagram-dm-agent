@@ -8,6 +8,7 @@ import { RecentActivity } from '@/components/dashboard/RecentActivity';
 import { DataAssistant } from '@/components/dashboard/DataAssistant';
 import { DateRangeFilter } from '@/components/common/DateRangeFilter';
 import { getDashboard, DashboardStats } from '@/lib/api';
+import { DateRange } from "react-day-picker";
 import { useAuth } from '@/contexts/AuthContext';
 import { useDashboard } from '@/contexts/DashboardContext';
 import { cn } from '@/lib/utils';
@@ -37,6 +38,7 @@ export default function ClientDashboard() {
   const { mode, isLogoutConfirmOpen, setIsLogoutConfirmOpen } = useDashboard();
   const navigate = useNavigate();
   const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -44,7 +46,7 @@ export default function ClientDashboard() {
     const fetchDashboard = async () => {
       try {
         setLoading(true);
-        const data = await getDashboard('daily', mode);
+        const data = await getDashboard('daily', mode, dateRange?.from?.toISOString(), dateRange?.to?.toISOString(), user?.voiceDirection);
         setStats(data);
         setError(null);
       } catch (err) {
@@ -68,7 +70,7 @@ export default function ClientDashboard() {
     };
 
     fetchDashboard();
-  }, [mode]);
+  }, [mode, dateRange]); // Added dateRange to dependencies
 
   if (loading) {
     return (
@@ -87,17 +89,20 @@ export default function ClientDashboard() {
   }
 
   // Bento Grid Items Definition
+  const isVoice = mode === 'voice';
+  const isOutbound = isVoice && user?.voiceDirection === 'outbound';
+
   const statItems = [
     {
-      title: mode === 'text' ? "Leads Contacted" : "Calls Received",
+      title: !isVoice ? "Leads Contacted" : (isOutbound ? "Calls Dialed" : "Calls Received"),
       value: (stats?.leadsContacted || 0).toLocaleString(),
       change: stats?.leadsContactedChange,
-      icon: mode === 'text' ? Users : Phone,
+      icon: !isVoice ? Users : Phone,
       colSpan: "col-span-1 md:col-span-2 lg:col-span-1",
       gradient: "from-emerald-500/10 to-transparent"
     },
     {
-      title: mode === 'text' ? "Unique Leads" : "Unique Callers",
+      title: !isVoice ? "Unique Leads" : (isOutbound ? "Connected Calls" : "Unique Callers"),
       value: (stats?.uniqueLeads || 0).toLocaleString(),
       change: stats?.uniqueLeadsChange,
       icon: Users,
@@ -105,7 +110,7 @@ export default function ClientDashboard() {
       gradient: "from-blue-500/10 to-transparent"
     },
     {
-      title: mode === 'text' ? "Messages Sent" : "Calls Answered",
+      title: !isVoice ? "Messages Sent" : (isOutbound ? "Voicemails Left" : "Calls Answered"),
       value: (stats?.messagesSent || 0).toLocaleString(),
       change: stats?.messagesSentChange,
       icon: MessageSquare,
@@ -114,7 +119,7 @@ export default function ClientDashboard() {
 
     },
     {
-      title: mode === 'text' ? "Response Rate" : "Answer Rate",
+      title: !isVoice ? "Response Rate" : (isOutbound ? "Connection Rate" : "Answer Rate"),
       value: `${stats?.responseRate || 0}%`,
       change: stats?.responseRateChange,
       icon: TrendingUp,
@@ -123,7 +128,7 @@ export default function ClientDashboard() {
       gradient: "from-emerald-500/20 to-emerald-500/5"
     },
     {
-      title: mode === 'text' ? "Bookings" : "Meetings Booked",
+      title: !isVoice ? "Bookings" : "Meetings Booked",
       value: stats?.bookings || 0,
       change: stats?.bookingsChange,
       icon: Calendar,
@@ -147,7 +152,7 @@ export default function ClientDashboard() {
             Good Evening, <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400">{user?.name?.split(' ')[0]}</span>
           </h1>
           <p className="text-emerald-100/50 font-light text-sm">
-            Your {mode === 'text' ? 'Text Agents' : 'Voice Agents'} are active and performing.
+            Your {mode === 'text' ? 'Text Agents' : (user?.voiceDirection === 'outbound' ? 'Outbound Voice Agents' : 'Inbound Voice Agents')} are active and performing.
           </p>
         </div>
 

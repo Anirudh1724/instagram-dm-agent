@@ -17,13 +17,15 @@ router = APIRouter(prefix="/api/clients", tags=["analytics"])
 
 # --- Core Data Fetching Functions (no FastAPI decorators) ---
 
-async def fetch_analytics_data(client_id: str, period: str):
+async def fetch_analytics_data(client_id: str, period: str, start_date: str = None, end_date: str = None):
     """
     Fetch analytics data for a client. This is a pure function for reuse.
     
     Args:
         client_id: The client's Instagram account ID
         period: Time period - daily, weekly, or monthly
+        start_date: Optional specific start date (ISO string)
+        end_date: Optional specific end date (ISO string)
     
     Returns:
         Analytics data including stats and chart data
@@ -36,7 +38,23 @@ async def fetch_analytics_data(client_id: str, period: str):
         # Define time ranges based on period
         now = datetime.utcnow()
         
-        if period == "daily":
+        if start_date and end_date:
+             # Custom Range
+             try:
+                 current_start = datetime.fromisoformat(start_date.replace("Z", "+00:00")).replace(tzinfo=None)
+                 current_end = datetime.fromisoformat(end_date.replace("Z", "+00:00")).replace(tzinfo=None)
+                 
+                 # Logic for "previous" period overlap in custom range is tricky, 
+                 # for now we can just compare to strictly before this window with same duration
+                 duration = current_end - current_start
+                 previous_start = current_start - duration
+                 chart_days = (current_end - current_start).days + 1
+             except:
+                  # Fallback to daily if parse fails
+                  current_start = now - timedelta(days=1)
+                  previous_start = now - timedelta(days=2)
+                  chart_days = 7
+        elif period == "daily":
             current_start = now - timedelta(days=1)
             previous_start = now - timedelta(days=2)
             chart_days = 7
@@ -275,6 +293,8 @@ async def get_client_activity(client_id: str, limit: int = 10):
 async def get_client_analytics_endpoint(
     client_id: str,
     period: str = Query("daily", regex="^(daily|weekly|monthly)$"),
+    startDate: str = None,
+    endDate: str = None,
     _: dict = Depends(verify_client_access),
 ):
     """
@@ -287,7 +307,7 @@ async def get_client_analytics_endpoint(
     Returns:
         Analytics data including stats and chart data
     """
-    return await fetch_analytics_data(client_id, period)
+    return await fetch_analytics_data(client_id, period, startDate, endDate)
 
 
 @router.get("/{client_id}/activity")
@@ -604,6 +624,8 @@ async def get_all_leads(
     offset: int = 0,
     search: str = None,
     status: str = None,
+    startDate: str = None,
+    endDate: str = None,
     _: dict = Depends(verify_client_access),
 ):
     """
@@ -658,6 +680,24 @@ async def get_all_leads(
                         continue
                     if status == "unqualified" and stage in ["booking", "post_booking"]:
                         continue
+                    if status == "unqualified" and stage in ["booking", "post_booking"]:
+                        continue
+
+                # Filter by Date
+                if startDate and endDate:
+                     last_interaction_str = conv.get("last_interaction", "")
+                     if last_interaction_str:
+                         try:
+                             li_time = datetime.fromisoformat(last_interaction_str.replace("Z", "+00:00")).replace(tzinfo=None)
+                             start_dt = datetime.fromisoformat(startDate.replace("Z", "+00:00")).replace(tzinfo=None)
+                             end_dt = datetime.fromisoformat(endDate.replace("Z", "+00:00")).replace(tzinfo=None)
+                             # Adjust end date to end of day
+                             end_dt = end_dt + timedelta(days=1) - timedelta(microseconds=1)
+                             
+                             if not (start_dt <= li_time <= end_dt):
+                                 continue
+                         except:
+                             pass
                 
                 # Standard metadata fetch
                 meta_key = f"customer:{client_id}:{customer_id}"

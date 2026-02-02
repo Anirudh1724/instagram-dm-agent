@@ -23,11 +23,13 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
+import { useAuth } from '@/contexts/AuthContext';
+import { DateRange } from "react-day-picker";
 
-type LeadFilter = 'all' | 'qualified' | 'unqualified' | 'freebie';
+type LeadFilter = 'all' | 'qualified' | 'engaged' | 'new';
 type DateFilter = 'all' | 'today' | 'yesterday' | 'custom';
 
-const statusFilters: { label: string; value: LeadFilter }[] = [
+const statusFilters = [
   { label: 'All', value: 'all' },
   { label: 'Qualified', value: 'qualified' },
   { label: 'Unqualified', value: 'unqualified' },
@@ -35,11 +37,21 @@ const statusFilters: { label: string; value: LeadFilter }[] = [
 ];
 
 export default function Leads() {
+  const { user } = useAuth();
+  const isVoice = user?.agentType === 'voice';
+
+  const filters = [
+    { label: 'All', value: 'all' },
+    isVoice ? { label: 'Hot', value: 'qualified' } : { label: 'Qualified', value: 'qualified' },
+    isVoice ? { label: 'Warm', value: 'engaged' } : { label: 'Unqualified', value: 'engaged' },
+    isVoice ? { label: 'Cold', value: 'new' } : { label: 'Freebie', value: 'new' },
+  ];
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState<LeadFilter>('all');
-  const [dateFilter, setDateFilter] = useState<DateFilter>('all');
-  const [customStartDate, setCustomStartDate] = useState('');
-  const [customEndDate, setCustomEndDate] = useState('');
+  const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
+  // const [dateFilter, setDateFilter] = useState<DateFilter>('all'); // Deprecated in favor of DateRange
+  // const [customStartDate, setCustomStartDate] = useState('');
+  // const [customEndDate, setCustomEndDate] = useState('');
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [messageInput, setMessageInput] = useState('');
@@ -56,19 +68,12 @@ export default function Leads() {
           limit: 50,
           search: searchQuery || undefined,
           status: activeFilter !== 'all' ? activeFilter : undefined,
+          startDate: dateRange?.from?.toISOString(),
+          endDate: dateRange?.to?.toISOString(),
         });
 
-        // Apply date filter client-side
-        let filteredLeads = response.leads;
-        if (dateFilter !== 'all') {
-          // Date filtering logic (simplified for mockup)
-          filteredLeads = filteredLeads.filter(lead => {
-            const leadTime = lead.lastMessageTime;
-            if (dateFilter === 'today') return leadTime.includes('min') || leadTime.includes('hour') || leadTime === 'Just now';
-            return true;
-          });
-        }
-        setLeads(filteredLeads);
+        // Backend now handles filtering
+        setLeads(response.leads);
       } catch (err) {
         console.error('Failed to fetch leads:', err);
         setLeads([]);
@@ -79,7 +84,7 @@ export default function Leads() {
 
     const debounce = setTimeout(fetchLeads, 300);
     return () => clearTimeout(debounce);
-  }, [searchQuery, activeFilter, dateFilter, customStartDate, customEndDate]);
+  }, [searchQuery, activeFilter, dateRange]);
 
   useEffect(() => {
     const fetchMessages = async () => {
@@ -138,33 +143,22 @@ export default function Leads() {
 
           {/* Filters */}
           <div className="flex gap-2 overflow-x-auto pb-2 md:pb-0 no-scrollbar">
-            <DateRangeFilter />
-            {statusFilters.map((filter) => (
+            <DateRangeFilter date={dateRange} onDateChange={setDateRange} />
+            {filters.map((filter) => (
               <button
                 key={filter.value}
-                onClick={() => setActiveFilter(filter.value)}
+                onClick={() => setActiveFilter(filter.value as LeadFilter)}
                 className={cn(
-                  'px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap border',
+                  "h-8 px-3 rounded-lg text-xs font-medium transition-all whitespace-nowrap",
                   activeFilter === filter.value
-                    ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20 shadow-[0_0_10px_rgba(16,185,129,0.1)]'
-                    : 'bg-transparent text-white/40 border-white/5 hover:bg-white/5 hover:text-white/60'
+                    ? "bg-white text-black shadow-lg shadow-white/10"
+                    : "text-white/40 hover:text-white hover:bg-white/5"
                 )}
               >
                 {filter.label}
               </button>
             ))}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" className="h-10 px-3 bg-transparent border-white/5 text-white/40 hover:text-white hover:bg-white/5 rounded-xl">
-                  <Calendar className="w-4 h-4 mr-2" />
-                  Filter Date
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="bg-zinc-900 border-white/10 text-white">
-                <DropdownMenuItem onClick={() => setDateFilter('all')} className="hover:bg-white/10 focus:bg-white/10 text-white/70 focus:text-white">All Time</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setDateFilter('today')} className="hover:bg-white/10 focus:bg-white/10 text-white/70 focus:text-white">Today</DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            {/* Removed internal Date Dropdown in favor of DateRangeFilter */}
           </div>
         </div>
       </motion.div>
