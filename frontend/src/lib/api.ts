@@ -39,14 +39,14 @@ async function apiRequest<T>(
     if (!response.ok) {
         const error = await response.json().catch(() => ({ detail: 'Request failed' }));
         let msg = error.detail || error.message || 'Request failed';
-        
+
         if (Array.isArray(msg)) {
             // Handle Pydantic validation errors
             msg = msg.map((e: any) => e.msg).join(', ');
         } else if (typeof msg === 'object') {
             msg = JSON.stringify(msg);
         }
-        
+
         throw new Error(msg);
     }
 
@@ -64,6 +64,7 @@ export interface LoginResponse {
     token?: string;
     is_admin?: boolean;
     agent_type?: 'text' | 'voice';
+    voice_direction?: 'inbound' | 'outbound';
 }
 
 export async function loginClient(email: string, password: string): Promise<LoginResponse> {
@@ -387,6 +388,7 @@ export interface Client {
     conversionRate: number;
     createdAt: string;
     agentType: 'text' | 'voice';
+    voiceDirection?: 'inbound' | 'outbound';
     mobileNumber?: string;
     status: 'active' | 'inactive';
     password?: string;
@@ -415,6 +417,7 @@ export async function getClients(): Promise<Client[]> {
         conversionRate: client.conversion_rate || 0,
         createdAt: client.created_at || new Date().toISOString().split('T')[0],
         agentType: client.agent_type || 'text',
+        voiceDirection: client.voice_direction || 'inbound',
         mobileNumber: client.mobile_number || '',
         status: client.status || 'active',
         password: client.login_password || '',
@@ -445,6 +448,7 @@ export async function getClient(clientId: string): Promise<Client | null> {
             conversionRate: response.conversion_rate || 0,
             createdAt: response.created_at || '',
             agentType: response.agent_type || 'text',
+            voiceDirection: response.voice_direction || 'inbound',
             mobileNumber: response.mobile_number || '',
             status: response.status || 'active',
             password: response.login_password || '',
@@ -467,6 +471,7 @@ export async function createClient(data: Partial<Client> & { password?: string }
         login_email: data.email,
         login_password: data.password,
         agent_type: data.agentType || 'text',
+        voice_direction: data.voiceDirection || 'inbound',
         mobile_number: data.mobileNumber || '',
         instagram_handle: data.instagramHandle || '',
         status: data.status || 'active',
@@ -491,6 +496,7 @@ export async function updateClient(clientId: string, data: Partial<Client>): Pro
         business_name: data.businessName,
         login_email: data.email,
         agent_type: data.agentType,
+        voice_direction: data.voiceDirection,
         mobile_number: data.mobileNumber || '',
         instagram_handle: data.instagramHandle || '',
         status: data.status,

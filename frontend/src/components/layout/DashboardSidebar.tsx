@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
@@ -44,6 +45,13 @@ export function DashboardSidebar() {
   const { mode, setMode, setIsLogoutConfirmOpen } = useDashboard();
 
   const isAdmin = user?.role === 'admin';
+
+  useEffect(() => {
+    if (user?.agentType && !isAdmin) {
+      setMode(user.agentType);
+    }
+  }, [user?.agentType, isAdmin, setMode]);
+
   const navItems = isAdmin ? adminNavItems : clientNavItems;
   const accentBg = isAdmin ? 'bg-cyan-500/10' : 'bg-emerald-500/10';
 
@@ -75,45 +83,16 @@ export function DashboardSidebar() {
         </div>
 
         {/* Agent Toggle (Client Only) - Top Placement */}
+        {/* Agent Badge (Client Only) - Replaces Toggle for strict separation */}
         {!isAdmin && (
-          <div className="grid grid-cols-2 gap-2 p-1 bg-black/20 rounded-xl border border-white/5">
-            <button
-              onClick={() => setMode('text')}
-              className={cn(
-                "relative flex flex-col items-center justify-center gap-1 py-3 rounded-lg transition-all duration-300 overflow-hidden",
-                mode === 'text' ? "text-emerald-400" : "text-white/40 hover:text-white hover:bg-white/5"
-              )}
-            >
-              {mode === 'text' && (
-                <motion.div layoutId="modePill" className="absolute inset-0 bg-emerald-500/10 border border-emerald-500/20 rounded-lg" />
-              )}
-              <div className="relative z-10 flex flex-col items-center gap-1">
-                <MessageSquare className="w-4 h-4" />
-                <span className="text-[10px] font-bold tracking-wider">TEXT</span>
-              </div>
-            </button>
-
-            <button
-              onClick={() => {
-                if (user?.agentType === 'text') {
-                    navigate('/upgrade');
-                    return;
-                }
-                setMode('voice');
-              }}
-              className={cn(
-                "relative flex flex-col items-center justify-center gap-1 py-3 rounded-lg transition-all duration-300 overflow-hidden",
-                mode === 'voice' ? "text-blue-400" : "text-white/40 hover:text-white hover:bg-white/5"
-              )}
-            >
-              {mode === 'voice' && (
-                <motion.div layoutId="modePill" className="absolute inset-0 bg-blue-500/10 border border-blue-500/20 rounded-lg" />
-              )}
-              <div className="relative z-10 flex flex-col items-center gap-1">
-                <Phone className="w-4 h-4" />
-                <span className="text-[10px] font-bold tracking-wider">VOICE</span>
-              </div>
-            </button>
+          <div className={cn(
+            "flex items-center justify-center gap-2 p-3 rounded-xl border border-white/5",
+            mode === 'voice' ? "bg-blue-500/10 text-blue-400" : "bg-emerald-500/10 text-emerald-400"
+          )}>
+            {mode === 'voice' ? <Phone className="w-4 h-4" /> : <MessageSquare className="w-4 h-4" />}
+            <span className="text-xs font-bold tracking-widest uppercase">
+              {mode === 'voice' ? 'Voice Agent Active' : 'Text Agent Active'}
+            </span>
           </div>
         )}
       </div>

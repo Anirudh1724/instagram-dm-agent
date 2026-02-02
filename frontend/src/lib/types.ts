@@ -7,6 +7,7 @@ export interface User {
   role: UserRole;
   avatar?: string;
   agentType?: 'text' | 'voice';
+  voiceDirection?: 'inbound' | 'outbound';
   password?: string;
 }
 
@@ -33,6 +34,7 @@ export interface Client {
   email: string;
   instagramHandle: string;
   agentType: 'text' | 'voice';
+  voiceDirection?: 'inbound' | 'outbound';
   mobileNumber?: string;
   isConnected: boolean;
   leadsCount: number;

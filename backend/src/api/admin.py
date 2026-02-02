@@ -147,6 +147,9 @@ class ClientCreateRequest(BaseModel):
     # Cal.com integration (per-client)
     calcom_api_key: str = ""
 
+    # Voice Configuration
+    voice_direction: str = "inbound"  # inbound or outbound
+
 
 class ClientResponse(BaseModel):
     """Response model for client data."""
@@ -164,6 +167,7 @@ class ClientResponse(BaseModel):
     availability: str = ""
     response_style: str = ""
     special_instructions: str = ""
+    voice_direction: str = "inbound"
     # Note: meta_access_token is NOT returned for security
 
 
@@ -200,6 +204,7 @@ async def list_clients(_: bool = Depends(verify_admin_key)):
                     "status": c.get("status", "active"),
                     "login_password": c.get("login_password", ""),
                     "has_token": bool(c.get("meta_access_token")),
+                    "voice_direction": c.get("voice_direction", "inbound"),
                 }
                 for c in clients
             ]
@@ -462,6 +467,7 @@ async def import_yaml_client(
         "availability": config.availability,
         "response_style": config.response_style,
         "special_instructions": config.special_instructions,
+        "voice_direction": config.voice_direction if hasattr(config, "voice_direction") else "inbound",
     }
     
     if store.save_client(config.client_id, config_dict):

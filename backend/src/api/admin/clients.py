@@ -44,6 +44,7 @@ class ClientCreateRequest(BaseModel):
     login_email: str = ""
     login_password: str = ""
     business_name: str = ""
+    agent_type: str = "text"  # Added agent_type field
     mobile_number: str = ""  # Added for Voice Agent
     status: str = "active"  # active, inactive
     industry: str = "general"

@@ -24,6 +24,7 @@ export default function ClientEditor() {
     password: '',
     instagramHandle: '',
     agentType: 'text' as 'text' | 'voice',
+    voiceDirection: 'inbound' as 'inbound' | 'outbound',
     greeting: '',
     qualification: '',
     booking: '',
@@ -44,6 +45,7 @@ export default function ClientEditor() {
               password: '',
               instagramHandle: client.instagramHandle || '',
               agentType: client.agentType || 'text',
+              voiceDirection: client.voiceDirection || 'inbound',
               greeting: client.aiPrompts?.greeting || '',
               qualification: client.aiPrompts?.qualification || '',
               booking: client.aiPrompts?.booking || '',
@@ -70,6 +72,7 @@ export default function ClientEditor() {
         email: formData.email,
         instagramHandle: formData.instagramHandle,
         agentType: formData.agentType,
+        voiceDirection: formData.agentType === 'voice' ? formData.voiceDirection : undefined,
         mobileNumber: formData.mobileNumber,
         aiPrompts: {
           greeting: formData.greeting,
@@ -89,10 +92,10 @@ export default function ClientEditor() {
       }
       navigate('/admin/clients');
     } catch (err: any) {
-      toast({ 
-        title: 'Error', 
-        description: err.message || `Failed to ${isNew ? 'create' : 'update'} client.`, 
-        variant: 'destructive' 
+      toast({
+        title: 'Error',
+        description: err.message || `Failed to ${isNew ? 'create' : 'update'} client.`,
+        variant: 'destructive'
       });
     } finally {
       setSaving(false);
@@ -211,9 +214,9 @@ export default function ClientEditor() {
                   </Label>
                   <Input
                     value={formData.agentType === 'voice' ? formData.mobileNumber : formData.instagramHandle}
-                    onChange={(e) => setFormData({ 
-                      ...formData, 
-                      [formData.agentType === 'voice' ? 'mobileNumber' : 'instagramHandle']: e.target.value 
+                    onChange={(e) => setFormData({
+                      ...formData,
+                      [formData.agentType === 'voice' ? 'mobileNumber' : 'instagramHandle']: e.target.value
                     })}
                     placeholder={formData.agentType === 'voice' ? "+1 (555) 000-0000" : "@wayne_tech"}
                     className="bg-black/20 border-white/10 text-white placeholder:text-white/20 h-12 rounded-xl focus:border-cyan-500/50 focus:bg-black/40 transition-all font-medium"
@@ -367,6 +370,43 @@ export default function ClientEditor() {
                 )}
               </button>
             </div>
+
+            {/* Voice Direction Configuration */}
+            {formData.agentType === 'voice' && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                className="pt-4 border-t border-white/5 space-y-3"
+              >
+                <Label className="text-white/60 text-xs uppercase tracking-wider pl-1">Call Direction</Label>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setFormData({ ...formData, voiceDirection: 'inbound' })}
+                    className={cn(
+                      "p-3 rounded-xl border flex flex-col items-center gap-2 transition-all duration-300",
+                      formData.voiceDirection === 'inbound'
+                        ? "bg-blue-500/20 border-blue-500/30 text-white"
+                        : "bg-black/20 border-white/5 text-white/40 hover:bg-white/5"
+                    )}
+                  >
+                    <span className="text-xs font-bold">INBOUND</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setFormData({ ...formData, voiceDirection: 'outbound' })}
+                    className={cn(
+                      "p-3 rounded-xl border flex flex-col items-center gap-2 transition-all duration-300",
+                      formData.voiceDirection === 'outbound'
+                        ? "bg-blue-500/20 border-blue-500/30 text-white"
+                        : "bg-black/20 border-white/5 text-white/40 hover:bg-white/5"
+                    )}
+                  >
+                    <span className="text-xs font-bold">OUTBOUND</span>
+                  </button>
+                </div>
+              </motion.div>
+            )}
           </motion.div>
 
           {/* Actions */}

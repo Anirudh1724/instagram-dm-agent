@@ -38,11 +38,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setUser(null);
         } else {
           // Token valid, update user data if needed (e.g. agentType might have changed)
-          setUser(prev => prev ? { 
-            ...prev, 
+          setUser(prev => prev ? {
+            ...prev,
             id: result.client_id || prev.id,
             name: result.business_name || prev.name,
-            agentType: result.agent_type || prev.agentType || 'text' 
+            agentType: result.agent_type || prev.agentType || 'text',
+            voiceDirection: (result as any).voice_direction || prev.voiceDirection || 'inbound'
           } : null);
         }
       } catch {
@@ -88,6 +89,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             role: 'client',
             avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${email}`,
             agentType: response.agent_type || 'text',
+            voiceDirection: response.voice_direction || 'inbound',
           };
 
           localStorage.setItem('leadai_token', response.token);
