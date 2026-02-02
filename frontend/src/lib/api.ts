@@ -93,7 +93,7 @@ export async function logout(): Promise<void> {
     localStorage.removeItem('leadai_user');
 }
 
-export async function verifyToken(): Promise<{ valid: boolean; client_id?: string; business_name?: string; agent_type?: 'text' | 'voice' }> {
+export async function verifyToken(): Promise<{ valid: boolean; client_id?: string; business_name?: string; agent_type?: 'text' | 'voice'; voice_direction?: 'inbound' | 'outbound' }> {
     const token = getAuthToken();
     if (!token) return { valid: false };
 
@@ -128,12 +128,53 @@ export interface DashboardStats {
     }>;
 }
 
-export async function getDashboard(period: string = 'daily', type: 'text' | 'voice' = 'text'): Promise<DashboardStats> {
+export async function getDashboard(
+    period: 'daily' | 'weekly' | 'monthly' = 'daily',
+    mode: 'text' | 'voice' = 'text',
+    startDate?: string,
+    endDate?: string,
+    voiceDirection?: 'inbound' | 'outbound'
+): Promise<DashboardStats> {
     const clientId = getClientId();
     const token = getAuthToken();
 
-    if (type === 'voice') {
-        // Mock data for Voice Agent Dashboard
+    const query = new URLSearchParams({ period, mode });
+    if (startDate) query.append('startDate', startDate);
+    if (endDate) query.append('endDate', endDate);
+
+    // In a real app, we would fetch from the backend
+    // const response = await fetch(`${API_URL}/clients/${getClientId()}/analytics?${query.toString()}`...);
+    if (mode === 'voice') {
+        if (voiceDirection === 'outbound') {
+            return {
+                leadsContacted: Math.floor(Math.random() * 200) + 50, // Calls Dialed (High volume)
+                leadsContactedChange: Math.floor(Math.random() * 50) + 10,
+                uniqueLeads: Math.floor(Math.random() * 80) + 20, // Connected Calls
+                uniqueLeadsChange: Math.floor(Math.random() * 15) + 5,
+                messagesSent: Math.floor(Math.random() * 60) + 10, // Voicemails Left
+                messagesSentChange: Math.floor(Math.random() * 10) + 2,
+                responseRate: Math.floor(Math.random() * 20) + 15, // Connection Rate (Lower for outbound)
+                responseRateChange: Math.floor(Math.random() * 5) - 2,
+                bookings: Math.floor(Math.random() * 8) + 1, // Meetings Booked
+                bookingsChange: Math.floor(Math.random() * 3),
+                chartData: [
+                    { name: 'Mon', leads: 150, messages: 45, conversions: 3 },
+                    { name: 'Tue', leads: 180, messages: 50, conversions: 4 },
+                    { name: 'Wed', leads: 160, messages: 40, conversions: 2 },
+                    { name: 'Thu', leads: 200, messages: 60, conversions: 5 },
+                    { name: 'Fri', leads: 140, messages: 35, conversions: 2 },
+                    { name: 'Sat', leads: 90, messages: 20, conversions: 1 },
+                    { name: 'Sun', leads: 60, messages: 10, conversions: 0 },
+                ],
+                funnelData: [
+                    { name: 'Dialed', value: 1000, fill: '#8884d8' },
+                    { name: 'Connected', value: 300, fill: '#83a6ed' },
+                    { name: 'Booked', value: 30, fill: '#8dd1e1' },
+                ],
+            };
+        }
+
+        // Mock data for Inbound Voice Agent Dashboard
         return {
             leadsContacted: Math.floor(Math.random() * 50) + 20, // Calls Received
             leadsContactedChange: Math.floor(Math.random() * 20) - 5,
@@ -279,9 +320,16 @@ export interface Lead {
     tags: string[];
 }
 
-export async function getLeads(
-    options: { limit?: number; offset?: number; search?: string; status?: string } = {}
-): Promise<{ leads: Lead[]; total: number }> {
+export interface GetLeadsParams {
+    limit?: number;
+    offset?: number;
+    search?: string;
+    status?: string;
+    startDate?: string;
+    endDate?: string;
+}
+
+export async function getLeads(params: GetLeadsParams): Promise<{ leads: Lead[]; total: number }> {
     // Mock data based on options
     const mockLeads: Lead[] = Array.from({ length: 50 }).map((_, i) => {
         const statuses: Lead['status'][] = ['new', 'engaged', 'qualified', 'booked', 'converted'];
@@ -303,11 +351,11 @@ export async function getLeads(
     });
 
     let filtered = mockLeads;
-    if (options.status && options.status !== 'all') {
-        filtered = filtered.filter(l => l.status === options.status);
+    if (params.status && params.status !== 'all') {
+        filtered = filtered.filter(l => l.status === params.status);
     }
-    if (options.search) {
-        const lowerSearch = options.search.toLowerCase();
+    if (params.search) {
+        const lowerSearch = params.search.toLowerCase();
         filtered = filtered.filter(l => l.name.toLowerCase().includes(lowerSearch) || l.username.toLowerCase().includes(lowerSearch));
     }
 

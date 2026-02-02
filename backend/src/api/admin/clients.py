@@ -45,6 +45,7 @@ class ClientCreateRequest(BaseModel):
     login_password: str = ""
     business_name: str = ""
     agent_type: str = "text"  # Added agent_type field
+    voice_direction: str = "inbound"  # inbound or outbound voice flows
     mobile_number: str = ""  # Added for Voice Agent
     status: str = "active"  # active, inactive
     industry: str = "general"
@@ -160,6 +161,7 @@ async def list_clients(_: bool = Depends(verify_admin_key)):
                 "has_token": bool(full_data.get("meta_access_token")),
                 "status": full_data.get("status", "active"),
                 "agent_type": full_data.get("agent_type", "text"),
+                "voice_direction": full_data.get("voice_direction", "inbound"),
                 "mobile_number": full_data.get("mobile_number", ""),
                 "instagram_handle": full_data.get("instagram_handle", ""),
                 "login_email": full_data.get("login_email", ""),

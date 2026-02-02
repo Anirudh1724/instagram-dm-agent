@@ -1,5 +1,6 @@
 import { cn } from '@/lib/utils';
 import { LeadStatus } from '@/lib/types';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface StatusBadgeProps {
   status: LeadStatus;
@@ -30,7 +31,18 @@ const statusConfig: Record<LeadStatus, { label: string; className: string }> = {
 };
 
 export function StatusBadge({ status, className }: StatusBadgeProps) {
-  const config = statusConfig[status];
+  const { user } = useAuth();
+  const isVoice = user?.agentType === 'voice';
+
+  const config = statusConfig[status] || { label: status, className: 'bg-zinc-500/20 text-zinc-400 border-zinc-500/30' };
+
+  let label = config.label;
+
+  if (isVoice) {
+    if (status === 'qualified') label = 'Hot';
+    if (status === 'engaged') label = 'Warm';
+    if (status === 'new') label = 'Cold';
+  }
 
   return (
     <span
@@ -41,7 +53,7 @@ export function StatusBadge({ status, className }: StatusBadgeProps) {
       )}
     >
       <span className="w-1.5 h-1.5 rounded-full bg-current mr-1.5 animate-pulse" />
-      {config.label}
+      {label}
     </span>
   );
 }
