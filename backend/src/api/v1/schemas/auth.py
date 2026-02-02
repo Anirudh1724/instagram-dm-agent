@@ -18,6 +18,7 @@ class LoginResponse(BaseModel):
     client_id: str
     business_name: str
     token: str
+    agent_type: str = "text"
 
 
 class AdminLoginResponse(BaseModel):
@@ -32,6 +33,7 @@ class TokenVerifyResponse(BaseModel):
     valid: bool
     client_id: Optional[str] = None
     business_name: Optional[str] = None
+    agent_type: str = "text"
 
 
 class LogoutResponse(BaseModel):

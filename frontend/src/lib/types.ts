@@ -6,6 +6,9 @@ export interface User {
   name: string;
   role: UserRole;
   avatar?: string;
+  agentType?: 'text' | 'voice';
+  voiceDirection?: 'inbound' | 'outbound';
+  password?: string;
 }
 
 export type LeadStatus = 'new' | 'engaged' | 'qualified' | 'booked' | 'converted';
@@ -30,6 +33,9 @@ export interface Client {
   businessName: string;
   email: string;
   instagramHandle: string;
+  agentType: 'text' | 'voice';
+  voiceDirection?: 'inbound' | 'outbound';
+  mobileNumber?: string;
   isConnected: boolean;
   leadsCount: number;
   conversionRate: number;

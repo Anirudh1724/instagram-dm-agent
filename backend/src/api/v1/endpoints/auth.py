@@ -133,6 +133,7 @@ async def login(request: LoginRequest):
                 client_id=client_id,
                 business_name=client_data.get("business_name", ""),
                 token=token,
+                agent_type=client_data.get("agent_type", "text"),
             )
         
         logger.warning("client_login_failed", email=email, reason="invalid_credentials")
@@ -221,6 +222,7 @@ async def verify_token(token: str = Query(..., description="Session token to ver
             valid=True,
             client_id=session["client_id"],
             business_name=client_data.get("business_name", "") if client_data else "",
+            agent_type=client_data.get("agent_type", "text") if client_data else "text",
         )
     
     except APIError:

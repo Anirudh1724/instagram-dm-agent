@@ -1,0 +1,14 @@
+INFO:     Will watch for changes in these directories: ['/home/anirudh/instagram-dm-agent/backend']
+INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
+INFO:     Started reloader process [48925] using WatchFiles
+/home/anirudh/instagram-dm-agent/backend/src/api/v1/endpoints/dashboard.py:22: FastAPIDeprecationWarning: `regex` has been deprecated, please use `pattern` instead
+  period: str = Query("daily", regex="^(daily|weekly|monthly)$"),
+INFO:     Started server process [48928]
+INFO:     Waiting for application startup.
+[2m2026-02-01T17:40:28.448457Z[0m [[32m[1minfo     [0m] [1mserver_starting               [0m [[0m[1m[34mmain[0m][0m [36mhost[0m=[35m0.0.0.0[0m [36mport[0m=[35m8000[0m
+[2m2026-02-01T17:40:28.448577Z[0m [[32m[1minfo     [0m] [1mapi_docs_available            [0m [[0m[1m[34mmain[0m][0m [36murl[0m=[35mhttp://0.0.0.0:8000/docs[0m
+[2m2026-02-01T17:40:29.055549Z[0m [[32m[1minfo     [0m] [1mfollowup_scheduler_started    [0m [[0m[1m[34mfollowup_scheduler[0m][0m [36minterval[0m=[35m900[0m
+[2m2026-02-01T17:40:29.055742Z[0m [[32m[1minfo     [0m] [1mfollowup_scheduler_started    [0m [[0m[1m[34mmain[0m][0m
+[2m2026-02-01T17:40:29.056630Z[0m [[33m[1mwarning  [0m] [1mredis_connection_failed_fallback[0m [[0m[1m[34mredis_config[0m][0m [36merror[0m=[35m'Error 111 connecting to localhost:6379. Connection refused.'[0m
+[2m2026-02-01T17:40:29.056780Z[0m [[33m[1mwarning  [0m] [1musing_mock_redis_fallback     [0m [[0m[1m[34mredis_config[0m][0m [36mmessage[0m=[35m'Redis not available. Using in-memory storage. Data will be lost on restart.'[0m
+INFO:     Application startup complete.

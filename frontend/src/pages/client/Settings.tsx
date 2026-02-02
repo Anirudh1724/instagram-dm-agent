@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Instagram, Settings as SettingsIcon, CheckCircle, XCircle, Loader2, Save } from 'lucide-react';
+import { Instagram, Settings as SettingsIcon, CheckCircle, XCircle, Loader2, Save, Eye, EyeOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -13,6 +13,7 @@ import { cn } from '@/lib/utils';
 export default function Settings() {
   const [isConnecting, setIsConnecting] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const { toast } = useToast();
   const { user } = useAuth();
 
@@ -123,6 +124,25 @@ export default function Settings() {
               <div className="space-y-2">
                 <Label className="text-white/60 text-xs uppercase tracking-wider">Email Address</Label>
                 <Input defaultValue={user?.email || ''} className="bg-black/20 border-white/10 text-white rounded-xl h-11 focus:border-white/20 transition-all font-medium" />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-white/60 text-xs uppercase tracking-wider">Password</Label>
+                <div className="relative">
+                  <Input 
+                    type={showPassword ? "text" : "password"}
+                    defaultValue={user?.password || ''} 
+                    className="bg-black/20 border-white/10 text-white rounded-xl h-11 focus:border-white/20 transition-all font-medium pr-10" 
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="absolute right-0 top-0 h-11 w-11 text-white/40 hover:text-white hover:bg-transparent"
+                    onClick={() => setShowPassword(!showPassword)}
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </Button>
+                </div>
               </div>
               <Button className="w-full bg-white/10 hover:bg-white/20 text-white h-11 rounded-xl">
                 <Save className="w-4 h-4 mr-2" />

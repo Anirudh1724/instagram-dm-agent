@@ -26,6 +26,8 @@ class LoginResponse(BaseModel):
     client_id: str = ""
     business_name: str = ""
     token: str = ""
+    agent_type: str = "text"
+    voice_direction: str = "inbound"
 
 
 def hash_password(password: str) -> str:
@@ -112,6 +114,8 @@ async def login(request: LoginRequest):
                 client_id=client_id,
                 business_name=client_data.get("business_name", ""),
                 token=token,
+                agent_type=client_data.get("agent_type", "text"),
+                voice_direction=client_data.get("voice_direction", "inbound"),
             )
         
         # No matching client found
@@ -210,6 +214,8 @@ async def verify_token(token: str):
             "valid": True,
             "client_id": session["client_id"],
             "business_name": client_data.get("business_name", "") if client_data else "",
+            "agent_type": client_data.get("agent_type", "text") if client_data else "text",
+            "voice_direction": client_data.get("voice_direction", "inbound") if client_data else "inbound",
         }
     
     except HTTPException:

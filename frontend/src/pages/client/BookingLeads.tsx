@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Calendar, CheckCircle, Clock, Loader2, Star } from 'lucide-react';
+import { DateRangeFilter } from '@/components/common/DateRangeFilter';
 import { LeadCard } from '@/components/dashboard/LeadCard';
 import { getBookingLeads, Lead } from '@/lib/api';
 
@@ -48,6 +49,7 @@ export default function BookingLeads() {
             High-intent leads and confirmed appointments
           </p>
         </div>
+        <DateRangeFilter />
       </motion.div>
 
       {/* Stats */}

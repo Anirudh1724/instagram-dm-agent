@@ -1,0 +1,13 @@
+livekit-agents
+livekit-plugins-deepgram
+livekit-plugins-cartesia
+livekit-plugins-openai
+livekit-plugins-silero
+python-dotenv
+redis
+fastapi
+uvicorn
+pyyaml
+aiohttp
+twilio
+

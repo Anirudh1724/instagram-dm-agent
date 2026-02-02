@@ -6,6 +6,7 @@ import { ActivityChart } from '@/components/dashboard/ActivityChart';
 import { ConversionFunnel } from '@/components/dashboard/ConversionFunnel';
 import { RecentActivity } from '@/components/dashboard/RecentActivity';
 import { DataAssistant } from '@/components/dashboard/DataAssistant';
+import { DateRangeFilter } from '@/components/common/DateRangeFilter';
 import { getDashboard, DashboardStats } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { useDashboard } from '@/contexts/DashboardContext';
@@ -149,6 +150,9 @@ export default function ClientDashboard() {
             Your {mode === 'text' ? 'Text Agents' : 'Voice Agents'} are active and performing.
           </p>
         </div>
+
+        <DateRangeFilter />
+
 
         {/* User Profile & Logout (Moved from Sidebar) */}
         <div className="flex items-center gap-4">
