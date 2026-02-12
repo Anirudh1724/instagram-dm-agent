@@ -139,7 +139,7 @@ async def entrypoint(ctx: JobContext):
     logger.info("Voice assistant started and greeting initiated")
 
 def run_agent():
-    cli.run_app(WorkerOptions(entrypoint_fnc=entrypoint, api_key=settings.livekit_api_key, api_secret=settings.livekit_api_secret, ws_url=settings.livekit_url))
+    cli.run_app(WorkerOptions(entrypoint_fnc=entrypoint, api_key=settings.livekit_api_key, api_secret=settings.livekit_api_secret, ws_url=settings.livekit_url, agent_name="inbound-agent"))
 
 if __name__ == "__main__":
     run_agent()

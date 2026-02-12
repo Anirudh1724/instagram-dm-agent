@@ -5,7 +5,7 @@ python3 -m uvicorn server:app --host 0.0.0.0 --port 8000 &
 SERVER_PID=$!
 
 # Start the Agent Worker
-python3 main.py dev &
+python3 main.py start &
 AGENT_PID=$!
 
 # Function to handle shutdown
